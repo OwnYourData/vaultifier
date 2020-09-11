@@ -1,0 +1,51 @@
+import sodium from 'libsodium-wrappers';
+const hexStringToByte = (value) => {
+    if (!value) {
+        return new Uint8Array();
+    }
+    const a = [];
+    for (let i = 0, len = value.length; i < len; i += 2) {
+        a.push(parseInt(value.substr(i, 2), 16));
+    }
+    return new Uint8Array(a);
+};
+const createSha256Hex = async (value) => {
+    // browser environment
+    if (typeof globalThis.crypto !== 'undefined') {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const msgBuffer = new TextEncoder('utf-8').encode(value);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
+        return hashHex;
+    }
+    // node environment
+    else {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const crypto = require('crypto');
+        return crypto.createHash('sha256')
+            .update(value)
+            .digest('hex');
+    }
+};
+const sharedSecret = 'auth';
+// the hash is created globally, so we don't use computing power to recreate it over and over
+const sharedSecretHash = createSha256Hex(sharedSecret);
+export const encrypt = async (text, publicKey) => {
+    const nonce = Buffer.from(sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES));
+    const cipherMsg = sodium.crypto_box_easy(Buffer.from(text), nonce, Buffer.from(hexStringToByte(publicKey)), Buffer.from(hexStringToByte(await sharedSecretHash)));
+    return {
+        value: Buffer.from(cipherMsg).toString('hex'),
+        nonce: nonce.toString('hex'),
+        version: '0.4',
+    };
+};
+// SEE: https://libsodium.gitbook.io/doc/public-key_cryptography/authenticated_encryption
+export const decrypt = async (text, cipher, nonce) => {
+    const passwordHash = await createSha256Hex(cipher);
+    const privateKeyHash = await sharedSecretHash;
+    const decrypted = sodium.crypto_box_open_easy(text, Buffer.from(nonce), sodium.crypto_scalarmult_base(Buffer.from(privateKeyHash)), Buffer.from(passwordHash));
+    return decrypted;
+};
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiY3J5cHRvLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vc3JjL2NyeXB0by50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQSxPQUFPLE1BQU0sTUFBTSxvQkFBb0IsQ0FBQztBQUV4QyxNQUFNLGVBQWUsR0FBRyxDQUFDLEtBQWEsRUFBRSxFQUFFO0lBQ3hDLElBQUksQ0FBQyxLQUFLLEVBQUU7UUFDVixPQUFPLElBQUksVUFBVSxFQUFFLENBQUM7S0FDekI7SUFDRCxNQUFNLENBQUMsR0FBRyxFQUFFLENBQUM7SUFDYixLQUFLLElBQUksQ0FBQyxHQUFHLENBQUMsRUFBRSxHQUFHLEdBQUcsS0FBSyxDQUFDLE1BQU0sRUFBRSxDQUFDLEdBQUcsR0FBRyxFQUFFLENBQUMsSUFBSSxDQUFDLEVBQUU7UUFDbkQsQ0FBQyxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsS0FBSyxDQUFDLE1BQU0sQ0FBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQztLQUMxQztJQUNELE9BQU8sSUFBSSxVQUFVLENBQUMsQ0FBQyxDQUFDLENBQUM7QUFDM0IsQ0FBQyxDQUFBO0FBRUQsTUFBTSxlQUFlLEdBQUcsS0FBSyxFQUFFLEtBQWEsRUFBbUIsRUFBRTtJQUMvRCxzQkFBc0I7SUFDdEIsSUFBSSxPQUFPLFVBQVUsQ0FBQyxNQUFNLEtBQUssV0FBVyxFQUFFO1FBQzVDLDZEQUE2RDtRQUM3RCxhQUFhO1FBQ2IsTUFBTSxTQUFTLEdBQUcsSUFBSSxXQUFXLENBQUMsT0FBTyxDQUFDLENBQUMsTUFBTSxDQUFDLEtBQUssQ0FBQyxDQUFDO1FBQ3pELE1BQU0sVUFBVSxHQUFHLE1BQU0sTUFBTSxDQUFDLE1BQU0sQ0FBQyxNQUFNLENBQUMsU0FBUyxFQUFFLFNBQVMsQ0FBQyxDQUFDO1FBQ3BFLE1BQU0sU0FBUyxHQUFHLEtBQUssQ0FBQyxJQUFJLENBQUMsSUFBSSxVQUFVLENBQUMsVUFBVSxDQUFDLENBQUMsQ0FBQztRQUN6RCxNQUFNLE9BQU8sR0FBRyxTQUFTLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxFQUFFLENBQUMsQ0FBQyxJQUFJLEdBQUcsQ0FBQyxDQUFDLFFBQVEsQ0FBQyxFQUFFLENBQUMsQ0FBQyxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLEVBQUUsQ0FBQyxDQUFDO1FBRS9FLE9BQU8sT0FBTyxDQUFDO0tBQ2hCO0lBQ0QsbUJBQW1CO1NBQ2Q7UUFDSCw4REFBOEQ7UUFDOUQsTUFBTSxNQUFNLEdBQUcsT0FBTyxDQUFDLFFBQVEsQ0FBQyxDQUFDO1FBRWpDLE9BQU8sTUFBTSxDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUM7YUFDL0IsTUFBTSxDQUFDLEtBQUssQ0FBQzthQUNiLE1BQU0sQ0FBQyxLQUFLLENBQUMsQ0FBQztLQUNsQjtBQUNILENBQUMsQ0FBQTtBQUVELE1BQU0sWUFBWSxHQUFHLE1BQU0sQ0FBQztBQUM1Qiw2RkFBNkY7QUFDN0YsTUFBTSxnQkFBZ0IsR0FBRyxlQUFlLENBQUMsWUFBWSxDQUFDLENBQUM7QUFFdkQsTUFBTSxDQUFDLE1BQU0sT0FBTyxHQUFHLEtBQUssRUFBRSxJQUFZLEVBQUUsU0FBaUIsRUFBRSxFQUFFO0lBQy9ELE1BQU0sS0FBSyxHQUFHLE1BQU0sQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLGVBQWUsQ0FBQyxNQUFNLENBQUMscUJBQXFCLENBQUMsQ0FBQyxDQUFDO0lBQ2hGLE1BQU0sU0FBUyxHQUFHLE1BQU0sQ0FBQyxlQUFlLENBQ3RDLE1BQU0sQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLEVBQ2pCLEtBQUssRUFDTCxNQUFNLENBQUMsSUFBSSxDQUFDLGVBQWUsQ0FBQyxTQUFTLENBQUMsQ0FBQyxFQUN2QyxNQUFNLENBQUMsSUFBSSxDQUFDLGVBQWUsQ0FBQyxNQUFNLGdCQUFnQixDQUFDLENBQUMsQ0FDckQsQ0FBQztJQUVGLE9BQU87UUFDTCxLQUFLLEVBQUUsTUFBTSxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsQ0FBQyxRQUFRLENBQUMsS0FBSyxDQUFDO1FBQzdDLEtBQUssRUFBRSxLQUFLLENBQUMsUUFBUSxDQUFDLEtBQUssQ0FBQztRQUM1QixPQUFPLEVBQUUsS0FBSztLQUNmLENBQUM7QUFDSixDQUFDLENBQUE7QUFFRCx5RkFBeUY7QUFDekYsTUFBTSxDQUFDLE1BQU0sT0FBTyxHQUFHLEtBQUssRUFBRSxJQUFZLEVBQUUsTUFBYyxFQUFFLEtBQWEsRUFBRSxFQUFFO0lBQzNFLE1BQU0sWUFBWSxHQUFHLE1BQU0sZUFBZSxDQUFDLE1BQU0sQ0FBQyxDQUFDO0lBQ25ELE1BQU0sY0FBYyxHQUFHLE1BQU0sZ0JBQWdCLENBQUM7SUFFOUMsTUFBTSxTQUFTLEdBQUcsTUFBTSxDQUFDLG9CQUFvQixDQUMzQyxJQUFJLEVBQ0osTUFBTSxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsRUFDbEIsTUFBTSxDQUFDLHNCQUFzQixDQUFDLE1BQU0sQ0FBQyxJQUFJLENBQUMsY0FBYyxDQUFDLENBQUMsRUFDMUQsTUFBTSxDQUFDLElBQUksQ0FBQyxZQUFZLENBQUMsQ0FDMUIsQ0FBQztJQUVGLE9BQU8sU0FBUyxDQUFDO0FBQ25CLENBQUMsQ0FBQSJ9
