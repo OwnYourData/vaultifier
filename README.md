@@ -7,19 +7,24 @@ A js-library to interact with the [OwnYourData Data-Vault](https://data-vault.eu
 ## Example
 
 ```javascript
-import { Vaultifier } from 'vaultifier/build/module
+import { Vaultifier } from 'vaultifier/dist/module
 
 const vaultifier = new Vaultifier(
   'https://data-vault.eu',
   Vaultifier.getRepositoryPath('eu', 'ownyourdata', 'testplugin'), // results in "eu.ownyourdata.testplugin"
-  'app_key',
-  'super_secret',
+  {
+    appKey: 'app_key',
+    appSecret: 'super_secret',
+  },
 );
 
 // authenticate Vaultifier against data-vault
 await vaultifier.initialize();
-// enable end-to-end encryption
+// enable end-to-end encryption (optional)
 await vaultifier.setEnd2EndEncryption(true);
+
+// check if provided data is valid and Vaultifier is authenticated (optional)
+console.log(`Vaultifier is ${vaultifier.isValid() ? 'valid' : 'invalid'}`);
 
 // send data to data vault
 await vaultifier.postData({

@@ -9,6 +9,6 @@ export declare class Communicator {
     post(url: string, usesAuth: boolean | undefined, data: string): Promise<AxiosResponse>;
     private _placeNetworkCall;
     private _getHeaders;
-    private _getBaseHeaders;
+    private _baseHeaders;
     private _getDataHeaders;
 }

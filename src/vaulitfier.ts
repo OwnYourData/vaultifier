@@ -17,7 +17,7 @@ class VaultifierUrls {
     baseUrl: string,
     repo: string,
   ) {
-    if (new URL(baseUrl).protocol !== 'https')
+    if (new URL(baseUrl).protocol !== 'https:')
       throw Error('Protocol of baseUrl is not "https".');
 
     this.token = `${baseUrl}/oauth/token`;

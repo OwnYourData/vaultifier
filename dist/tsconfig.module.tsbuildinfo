@@ -152,8 +152,8 @@
         "affectsGlobalScope": false
       },
       "../src/communicator.ts": {
-        "version": "814d33428631702299a95152aba610df721c03914054855e71bf3a5ad6e14f2d",
-        "signature": "fe4df7dd292b873eadefa1436e8d031dac79ef87b46f37f4539a96298549f131",
+        "version": "3c207a0011872d061cc3b5f4a0fb81e932b644aadfb5f8afe30c8658e2d7b9fb",
+        "signature": "1fc530cc76dea829390bd1c2dceaabf590e8bc2922026c3ae6c7bdbacf83cd51",
         "affectsGlobalScope": false
       },
       "../node_modules/@types/libsodium-wrappers/index.d.ts": {
@@ -167,8 +167,8 @@
         "affectsGlobalScope": false
       },
       "../src/vaulitfier.ts": {
-        "version": "d60950f6826e312a3bb56800e4f67ba7f4801bc1a043f5af23e0e2fc3c6099ea",
-        "signature": "c12c5a4bc2f2313c9b0130e5248244b7ed186f2e7552eaae1d12a84684559868",
+        "version": "1b1e494919f5eb57f260db624f6b8ecfa893a41bb89530926a8cb0daa22e47a1",
+        "signature": "0b36eed4314ceb4e2ee7077f568c8cd2081f60bafb8ab17fb9a1dd7b13f2fee2",
         "affectsGlobalScope": false
       },
       "../src/index.ts": {
@@ -439,11 +439,11 @@
     },
     "options": {
       "incremental": true,
-      "target": 99,
+      "target": 2,
       "outDir": "./module",
       "rootDir": "../src",
       "moduleResolution": 2,
-      "module": 99,
+      "module": 5,
       "declaration": true,
       "inlineSourceMap": true,
       "esModuleInterop": true,
@@ -470,7 +470,6 @@
         "../src/types"
       ],
       "project": "../tsconfig.module.json",
-      "watch": true,
       "configFilePath": "../tsconfig.module.json"
     },
     "referencedMap": {

@@ -48,7 +48,7 @@ export declare class Vaultifier {
     /**
      * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
      */
-    isValid(): Promise<boolean>;
+    isValid(): boolean;
     private _getInstallCodeUrl;
     /**
      * Resolves an install code (usually 6 digits) and returns a set of VaultCredentials, if successful.
