@@ -167,8 +167,8 @@
         "affectsGlobalScope": false
       },
       "../src/vaulitfier.ts": {
-        "version": "1b1e494919f5eb57f260db624f6b8ecfa893a41bb89530926a8cb0daa22e47a1",
-        "signature": "0b36eed4314ceb4e2ee7077f568c8cd2081f60bafb8ab17fb9a1dd7b13f2fee2",
+        "version": "52755dc7fcdabcc6dd641e7ad7902eb5ad07f3fa0d663536f2d1bd0c548b92c2",
+        "signature": "4e09d7b7864b986a89acff7073052941f58cb9d623708c9383abed8b163d1a5f",
         "affectsGlobalScope": false
       },
       "../src/index.ts": {
@@ -470,6 +470,7 @@
         "../src/types"
       ],
       "project": "../tsconfig.module.json",
+      "watch": true,
       "configFilePath": "../tsconfig.module.json"
     },
     "referencedMap": {

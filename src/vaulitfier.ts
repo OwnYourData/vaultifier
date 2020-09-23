@@ -7,24 +7,42 @@ interface VaultCredentials {
   appSecret: string,
 }
 
+interface VaultItem {
+  id: number,
+  repoId: number,
+  value: any,
+  createdAt: Date,
+  updatedAt: Date,
+  repoName: string,
+  accessCount: number,
+  // TODO: correct data type?
+  merkleId?: string,
+};
+
+type VaultItemMeta = Pick<VaultItem, 'id'>;
+
 class VaultifierUrls {
   readonly token: string;
   readonly publicKey: string;
   readonly privateKey: string;
-  readonly data: string;
+  readonly postData: string;
 
   constructor(
-    baseUrl: string,
-    repo: string,
+    private baseUrl: string,
+    private repo: string,
   ) {
     if (new URL(baseUrl).protocol !== 'https:')
       throw Error('Protocol of baseUrl is not "https".');
 
     this.token = `${baseUrl}/oauth/token`;
-    this.data = `${baseUrl}/api/repos/${repo}/items`;
+    this.postData = `${baseUrl}/api/repos/${repo}/items`;
     this.publicKey = `${baseUrl}/api/repos/${repo}/pub_key`;
     this.privateKey = `${baseUrl}/api/users/current`;
   }
+
+  getData = (itemId?: number) => itemId ?
+    `${this.baseUrl}/api/items/${itemId}/details` :
+    `${this.baseUrl}/api/repos/${this.repo}/items`;
 }
 
 export class Vaultifier {
@@ -96,21 +114,51 @@ export class Vaultifier {
    * 
    * @param {Object} data JSON data to post into the repository
    * 
-   * @returns {Promise<void>}
+   * @returns {Promise<VaultItemMeta>}
    */
-  async postData(data: any): Promise<void> {
+  async postItem(data: any): Promise<VaultItemMeta> {
     const dataString = JSON.stringify(data);
     const dataToPost = this._usesEncryption ? JSON.stringify(encrypt(dataString, this.publicKey as string)) : dataString;
-    this.communicator.post(this.urls.data, true, dataToPost);
+
+    const res = await this.communicator.post(this.urls.postData, true, dataToPost);
+
+    return res.data as VaultItemMeta;
   }
 
   /**
    * Retrieve data from the data vault's repository
    * 
-   * @returns TODO:
+   * @returns {Promise<VaultItem>}
    */
-  async getData(/* TODO: there should be constraints here */): Promise<any> {
-    throw 'not implemented';
+  async getItem(itemId: number): Promise<VaultItem> {
+    const res = await this.communicator.get(this.urls.getData(itemId), true);
+    const item = res.data as VaultItem;
+
+    try {
+      // item usually contains JSON data, therefore we try to parse the string
+      item.value = JSON.parse(item.value);
+    } catch { /* */ }
+
+    return item;
+  }
+
+  /**
+   * Retrieve data from the data vault's repository
+   * 
+   * @returns {Promise<any[]>} array of JSON data
+   */
+  async getItems(): Promise<any[]> {
+    const res = await this.communicator.get(this.urls.getData(), true);
+    const data = res.data as any[];
+
+    // item usually contains JSON data, therefore we try to parse the string
+    return data.map((item) => {
+      try {
+        return JSON.parse(item);
+      } catch { /* */ }
+
+      return item;
+    })
   }
 
   /** 

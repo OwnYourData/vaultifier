@@ -2,6 +2,17 @@ interface VaultCredentials {
     appKey: string;
     appSecret: string;
 }
+interface VaultItem {
+    id: number;
+    repoId: number;
+    value: any;
+    createdAt: Date;
+    updatedAt: Date;
+    repoName: string;
+    accessCount: number;
+    merkleId?: string;
+}
+declare type VaultItemMeta = Pick<VaultItem, 'id'>;
 export declare class Vaultifier {
     baseUrl: string;
     repo: string;
@@ -36,15 +47,21 @@ export declare class Vaultifier {
      *
      * @param {Object} data JSON data to post into the repository
      *
-     * @returns {Promise<void>}
+     * @returns {Promise<VaultItemMeta>}
      */
-    postData(data: any): Promise<void>;
+    postItem(data: any): Promise<VaultItemMeta>;
     /**
      * Retrieve data from the data vault's repository
      *
-     * @returns TODO:
+     * @returns {Promise<VaultItem>}
      */
-    getData(): Promise<any>;
+    getItem(itemId: number): Promise<VaultItem>;
+    /**
+     * Retrieve data from the data vault's repository
+     *
+     * @returns {Promise<any[]>} array of JSON data
+     */
+    getItems(): Promise<any[]>;
     /**
      * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
      */

@@ -27,7 +27,7 @@ await vaultifier.setEnd2EndEncryption(true);
 console.log(`Vaultifier is ${vaultifier.isValid() ? 'valid' : 'invalid'}`);
 
 // send data to data vault
-await vaultifier.postData({
+await vaultifier.postItem({
   foo: 'bar',
 });
 ```
