@@ -1,4 +1,4 @@
-import { Communicator } from './communicator';
+import { Communicator, NetworkAdapter } from './communicator';
 import { encrypt } from './crypto';
 import { UnauthorizedError } from './errors';
 
@@ -79,6 +79,17 @@ export class Vaultifier {
   async initialize(): Promise<void> {
     await this.communicator.refreshToken();
   }
+
+  /**
+   * This enables to intercept all network calls made by Vaultifier
+   * This is helpful, if you are already using a library for all your network calls
+   * If "setNetworkAdapter" is called without providing an adapter, Vaultifier's default adapter is used
+   * 
+   * @param {NetworkAdapter} [adapter]
+   * 
+   * @returns {NetworkAdapter} the network adapter that will be used by Vaultifier
+   */
+  setNetworkAdapter = (adapter?: NetworkAdapter): NetworkAdapter => this.communicator.setNetworkAdapter(adapter);
 
   /**
    * Enables or disables end-to-end encryption (if repository supports it)

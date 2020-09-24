@@ -11,12 +11,52 @@ interface DataHeaders extends BaseHeaders {
   'Authorization': string,
 }
 
+export type NetworkResponse =
+  Pick<
+    AxiosResponse,
+    'data' |
+    'headers' |
+    'request' |
+    'status'
+  >
+
+export interface NetworkAdapter {
+  get: (
+    url: string,
+    headers?: any,
+  ) => Promise<NetworkResponse>;
+
+  post: (
+    url: string,
+    data?: any,
+    headers?: any,
+  ) => Promise<NetworkResponse>;
+};
+
 export class Communicator {
   private token?: string;
+  private networkAdapter: NetworkAdapter;
 
   constructor(
     public tokenCallback: () => Promise<string | undefined>,
-  ) { }
+  ) {
+    // set default implementation
+    this.networkAdapter = this.setNetworkAdapter();
+  }
+
+  setNetworkAdapter = (adapter?: NetworkAdapter): NetworkAdapter => {
+    if (adapter)
+      return this.networkAdapter = adapter;
+    else // default implementation
+      return this.networkAdapter = {
+        get: (url: string, headers?: any) => axios.get(url, {
+          headers: headers,
+        }),
+        post: (url: string, data?: any, headers?: any) => axios.post(url, data, {
+          headers: headers,
+        }),
+      }
+  }
 
   async refreshToken(): Promise<string | undefined> {
     return this.token = await this.tokenCallback();
@@ -26,20 +66,22 @@ export class Communicator {
     return !!this.token;
   }
 
-  async get(url: string, usesAuth = false): Promise<AxiosResponse> {
-    return this._placeNetworkCall(async () => axios.get(url, {
-      headers: this._getHeaders(usesAuth),
-    }), usesAuth);
+  async get(url: string, usesAuth = false): Promise<NetworkResponse> {
+    return this._placeNetworkCall(
+      async () => this.networkAdapter.get(url, this._getHeaders(usesAuth)),
+      usesAuth
+    );
   }
 
-  async post(url: string, usesAuth = false, data: string): Promise<AxiosResponse> {
-    return this._placeNetworkCall(async () => axios.post(url, data, {
-      headers: this._getHeaders(usesAuth),
-    }), usesAuth);
+  async post(url: string, usesAuth = false, data: string): Promise<NetworkResponse> {
+    return this._placeNetworkCall(
+      async () => this.networkAdapter.post(url, data, this._getHeaders(usesAuth)),
+      usesAuth
+    );
   }
 
-  private async _placeNetworkCall(callable: () => Promise<AxiosResponse>, isAuthenticated = false) {
-    let response: AxiosResponse;
+  private async _placeNetworkCall(callable: () => Promise<NetworkResponse>, isAuthenticated = false) {
+    let response: NetworkResponse;
 
     if (isAuthenticated) {
       response = await callable();

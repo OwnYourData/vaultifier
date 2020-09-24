@@ -1,3 +1,4 @@
+import { NetworkAdapter } from './communicator';
 export interface VaultCredentials {
     appKey: string;
     appSecret: string;
@@ -33,6 +34,16 @@ export declare class Vaultifier {
      * @returns {Promise<void>}
      */
     initialize(): Promise<void>;
+    /**
+     * This enables to intercept all network calls made by Vaultifier
+     * This is helpful, if you are already using a library for all your network calls
+     * If "setNetworkAdapter" is called without providing an adapter, Vaultifier's default adapter is used
+     *
+     * @param {NetworkAdapter} [adapter]
+     *
+     * @returns {NetworkAdapter} the network adapter that will be used by Vaultifier
+     */
+    setNetworkAdapter: (adapter?: NetworkAdapter | undefined) => NetworkAdapter;
     /**
      * Enables or disables end-to-end encryption (if repository supports it)
      *
