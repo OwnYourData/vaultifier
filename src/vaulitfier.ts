@@ -2,12 +2,12 @@ import { Communicator } from './communicator';
 import { encrypt } from './crypto';
 import { UnauthorizedError } from './errors';
 
-interface VaultCredentials {
+export interface VaultCredentials {
   appKey: string,
   appSecret: string,
 }
 
-interface VaultItem {
+export interface VaultItem {
   id: number,
   repoId: number,
   value: any,
