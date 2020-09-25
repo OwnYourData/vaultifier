@@ -5,15 +5,31 @@ export interface VaultCredentials {
 }
 export interface VaultItem {
     id: number;
-    repoId: number;
     value: any;
     createdAt: Date;
     updatedAt: Date;
+    repoId: number;
     repoName: string;
     accessCount: number;
+    dri?: string;
+    schemaDri?: string;
+    mimeType?: string;
     merkleId?: string;
+    oydHash?: string;
+    oydSourcePileId?: string;
 }
-declare type VaultItemMeta = Pick<VaultItem, 'id'>;
+export interface VaultItemQuery {
+    id?: number;
+    dri?: string;
+}
+export interface VaultPostItem {
+    content: any;
+    dri: string;
+    schemaDri: string;
+    mimeType: string;
+    repo?: string;
+}
+declare type VaultMinMeta = Pick<VaultItem, 'id'>;
 export declare class Vaultifier {
     baseUrl: string;
     repo: string;
@@ -53,26 +69,45 @@ export declare class Vaultifier {
      */
     setEnd2EndEncryption(isActive?: boolean): Promise<void>;
     private get _usesEncryption();
+    private encryptOrNot;
     /**
-     * Posts data into the data vault's repository
+     * Posts a value into the data vault's repository, without any metadata
      *
-     * @param {Object} data JSON data to post into the repository
+     * @param {Object} value JSON data to post into the repository
      *
-     * @returns {Promise<VaultItemMeta>}
+     * @returns {Promise<VaultMinMeta>}
      */
-    postItem(data: any): Promise<VaultItemMeta>;
+    postValue(value: any): Promise<VaultMinMeta>;
     /**
-     * Retrieve data from the data vault's repository
+     * Get a specified value from the vault's repository, without any metadata
+     *
+     * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
+     *
+     * @returns {Promise<VaultMinMeta>} the value of the specified item
+     */
+    getValue(query: VaultItemQuery): Promise<VaultMinMeta>;
+    /**
+     * Posts an item into the data vault's repository, including any metadata
+     *
+     * @param item data that is going to be passed to the data vault
+     *
+     * @returns {Promise<VaultMinMeta>}
+     */
+    postItem(item: VaultPostItem): Promise<VaultMinMeta>;
+    /**
+     * Retrieve data from the data vault's repository including its metadata
+     *
+     * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
      *
      * @returns {Promise<VaultItem>}
      */
-    getItem(itemId: number): Promise<VaultItem>;
+    getItem(query: VaultItemQuery): Promise<VaultItem>;
     /**
-     * Retrieve data from the data vault's repository
+     * Retrieve data from the data vault's repository without metadata
      *
-     * @returns {Promise<any[]>} array of JSON data
+     * @returns {Promise<VaultMinMeta[]>} array of JSON data
      */
-    getItems(): Promise<any[]>;
+    getValues(): Promise<VaultMinMeta[]>;
     /**
      * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
      */

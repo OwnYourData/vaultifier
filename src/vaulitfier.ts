@@ -8,24 +8,44 @@ export interface VaultCredentials {
 }
 
 export interface VaultItem {
+  // TODO: Do all have correct data type?
   id: number,
-  repoId: number,
   value: any,
   createdAt: Date,
   updatedAt: Date,
+  repoId: number,
   repoName: string,
   accessCount: number,
-  // TODO: correct data type?
+  dri?: string,
+  schemaDri?: string,
+  mimeType?: string,
   merkleId?: string,
+  oydHash?: string,
+  oydSourcePileId?: string,
 };
 
-type VaultItemMeta = Pick<VaultItem, 'id'>;
+export interface VaultItemQuery {
+  id?: number,
+  dri?: string,
+}
 
+export interface VaultPostItem {
+  content: any,
+  dri: string,
+  schemaDri: string,
+  mimeType: string,
+  repo?: string,
+}
+
+type VaultMinMeta = Pick<VaultItem, 'id'>;
+
+// TODO: User should be able to change repo on the fly
 class VaultifierUrls {
   readonly token: string;
   readonly publicKey: string;
   readonly privateKey: string;
-  readonly postData: string;
+  readonly postValue: string;
+  readonly postItem: string;
 
   constructor(
     private baseUrl: string,
@@ -35,14 +55,19 @@ class VaultifierUrls {
       throw Error('Protocol of baseUrl is not "https".');
 
     this.token = `${baseUrl}/oauth/token`;
-    this.postData = `${baseUrl}/api/repos/${repo}/items`;
+    this.postValue = `${baseUrl}/api/repos/${repo}/items`;
+    this.postItem = `${baseUrl}/api/data`;
     this.publicKey = `${baseUrl}/api/repos/${repo}/pub_key`;
     this.privateKey = `${baseUrl}/api/users/current`;
   }
 
-  getData = (itemId?: number) => itemId ?
+  getItem = (itemId?: number) => itemId ?
     `${this.baseUrl}/api/items/${itemId}/details` :
     `${this.baseUrl}/api/repos/${this.repo}/items`;
+
+  getValue = (query: VaultItemQuery) => query.dri ?
+    `${this.baseUrl}/api/data?dri=${query.dri}` :
+    `${this.baseUrl}/api/data?id=${query.id}`;
 }
 
 export class Vaultifier {
@@ -102,7 +127,7 @@ export class Vaultifier {
     if (isActive) {
       try {
         const pubKeyResponse = await this.communicator.get(this.urls.publicKey, true);
-        this.publicKey = pubKeyResponse.data['public_key'];
+        this.publicKey = pubKeyResponse.data.public_key;
 
         // TODO:
         const privateKeyResponse = await this.communicator.get(this.urls.privateKey, true);
@@ -119,31 +144,115 @@ export class Vaultifier {
   }
 
   private get _usesEncryption(): boolean { return this.publicKey !== undefined && this.publicKey.length > 0 }
+  private encryptOrNot(value: any): any {
+    if (this._usesEncryption) {
+      const dataString = JSON.stringify(value);
+      return encrypt(dataString, this.publicKey as string);
+    }
 
-  /**
-   * Posts data into the data vault's repository
-   * 
-   * @param {Object} data JSON data to post into the repository
-   * 
-   * @returns {Promise<VaultItemMeta>}
-   */
-  async postItem(data: any): Promise<VaultItemMeta> {
-    const dataString = JSON.stringify(data);
-    const dataToPost = this._usesEncryption ? JSON.stringify(encrypt(dataString, this.publicKey as string)) : dataString;
-
-    const res = await this.communicator.post(this.urls.postData, true, dataToPost);
-
-    return res.data as VaultItemMeta;
+    return value;
   }
 
   /**
-   * Retrieve data from the data vault's repository
+   * Posts a value into the data vault's repository, without any metadata
+   * 
+   * @param {Object} value JSON data to post into the repository
+   * 
+   * @returns {Promise<VaultMinMeta>}
+   */
+  async postValue(value: any): Promise<VaultMinMeta> {
+    const valueToPost = JSON.stringify(this.encryptOrNot(value));
+
+    const res = await this.communicator.post(this.urls.postValue, true, valueToPost);
+
+    return res.data as VaultMinMeta;
+  }
+
+  /**
+   * Get a specified value from the vault's repository, without any metadata
+   * 
+   * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
+   * 
+   * @returns {Promise<VaultMinMeta>} the value of the specified item
+   */
+  async getValue(query: VaultItemQuery): Promise<VaultMinMeta> {
+    const res = await this.communicator.get(this.urls.getValue(query), true);
+    const item = res.data;
+
+    try {
+      // item usually contains JSON data, therefore we try to parse the string
+      return JSON.parse(item);
+    } catch { /* */ }
+
+    return item as VaultMinMeta;
+  }
+
+
+  /**
+   * Posts an item into the data vault's repository, including any metadata
+   * 
+   * @param item data that is going to be passed to the data vault
+   * 
+   * @returns {Promise<VaultMinMeta>}
+   */
+  async postItem(item: VaultPostItem): Promise<VaultMinMeta> {
+    item.content = this.encryptOrNot(item.content);
+
+    if (!item.repo)
+      item.repo = this.repo;
+
+    const { content, dri, mimeType, schemaDri, repo } = item;
+
+    // POST object is slightly different to our internal structure
+    const dataToPost = {
+      content,
+      dri,
+      table_name: repo,
+      mime_type: mimeType,
+      schema_dri: schemaDri,
+    }
+
+    const res = await this.communicator.post(this.urls.postItem, true, JSON.stringify(dataToPost));
+
+    return res.data as VaultMinMeta;
+  }
+
+  /**
+   * Retrieve data from the data vault's repository including its metadata
+   * 
+   * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
    * 
    * @returns {Promise<VaultItem>}
    */
-  async getItem(itemId: number): Promise<VaultItem> {
-    const res = await this.communicator.get(this.urls.getData(itemId), true);
-    const item = res.data as VaultItem;
+  async getItem(query: VaultItemQuery): Promise<VaultItem> {
+    let item: VaultItem;
+
+    if (query.id) {
+      const { data } = await this.communicator.get(this.urls.getItem(query.id), true);
+
+      item = {
+        id: data.id,
+        value: data.value,
+        accessCount: data.access_count,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+        repoId: data.repo_id,
+        repoName: data.repo_name,
+        dri: data.dri,
+        schemaDri: data.schema_dri,
+        mimeType: data.mime_type,
+        merkleId: data.merkle_id,
+        oydHash: data.oyd_hash,
+        oydSourcePileId: data.oyd_source_pile_id,
+      }
+    }
+    else {
+      const { id } = await this.getValue(query);
+
+      return this.getItem({
+        id,
+      });
+    }
 
     try {
       // item usually contains JSON data, therefore we try to parse the string
@@ -154,22 +263,21 @@ export class Vaultifier {
   }
 
   /**
-   * Retrieve data from the data vault's repository
+   * Retrieve data from the data vault's repository without metadata
    * 
-   * @returns {Promise<any[]>} array of JSON data
+   * @returns {Promise<VaultMinMeta[]>} array of JSON data
    */
-  async getItems(): Promise<any[]> {
-    const res = await this.communicator.get(this.urls.getData(), true);
-    const data = res.data as any[];
+  async getValues(): Promise<VaultMinMeta[]> {
+    const { data } = await this.communicator.get(this.urls.getItem(), true);
 
     // item usually contains JSON data, therefore we try to parse the string
-    return data.map((item) => {
+    return data.map((item: any) => {
       try {
-        return JSON.parse(item);
+        return JSON.parse(item) as VaultMinMeta;
       } catch { /* */ }
 
-      return item;
-    })
+      return item as VaultMinMeta;
+    });
   }
 
   /** 
@@ -216,12 +324,12 @@ export class Vaultifier {
 
     try {
       const response = await this.communicator.post(this.urls.token, false, JSON.stringify({
-        'client_id': this.credentials?.appKey,
-        'client_secret': this.credentials?.appSecret,
-        'grant_type': 'client_credentials'
+        client_id: this.credentials?.appKey,
+        client_secret: this.credentials?.appSecret,
+        grant_type: 'client_credentials'
       }));
 
-      token = response.data['access_token'] as string;
+      token = response.data.access_token as string;
     }
     catch {
       throw new UnauthorizedError();
