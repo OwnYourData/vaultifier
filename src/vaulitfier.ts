@@ -29,6 +29,10 @@ export interface VaultItemQuery {
   dri?: string,
 }
 
+export interface VaultItemsQuery {
+  schemaDri: string,
+}
+
 export interface VaultPostItem {
   content: any,
   dri: string,
@@ -37,7 +41,14 @@ export interface VaultPostItem {
   repo?: string,
 }
 
-type VaultMinMeta = Pick<VaultItem, 'id'>;
+export interface VaultMinMeta {
+  id: number,
+}
+
+export interface VaultValue {
+  id: number,
+  content: any,
+}
 
 // TODO: User should be able to change repo on the fly
 class VaultifierUrls {
@@ -61,11 +72,20 @@ class VaultifierUrls {
     this.privateKey = `${baseUrl}/api/users/current`;
   }
 
-  getItem = (itemId?: number) => itemId ?
-    `${this.baseUrl}/api/items/${itemId}/details` :
+  getItem = (query: VaultItemQuery): string => query.id ?
+    `${this.baseUrl}/api/items/${query.id}/details` :
+    `${this.baseUrl}/api/dri/${query.dri}/details`;
+
+  getItems = (query?: VaultItemsQuery): string => query ?
+    `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}` :
     `${this.baseUrl}/api/repos/${this.repo}/items`;
 
+
   getValue = (query: VaultItemQuery) => query.dri ?
+    `${this.baseUrl}/api/data?dri=${query.dri}` :
+    `${this.baseUrl}/api/data?id=${query.id}`;
+
+  deleteItem = (query: VaultItemQuery) => query.dri ?
     `${this.baseUrl}/api/data?dri=${query.dri}` :
     `${this.baseUrl}/api/data?id=${query.id}`;
 }
@@ -173,18 +193,18 @@ export class Vaultifier {
    * 
    * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
    * 
-   * @returns {Promise<VaultMinMeta>} the value of the specified item
+   * @returns {Promise<VaultValue>} the value of the specified item
    */
-  async getValue(query: VaultItemQuery): Promise<VaultMinMeta> {
+  async getValue(query: VaultItemQuery): Promise<VaultValue> {
     const res = await this.communicator.get(this.urls.getValue(query), true);
-    const item = res.data;
+    const item = res.data as VaultValue;
 
     try {
       // item usually contains JSON data, therefore we try to parse the string
-      return JSON.parse(item);
+      item.content = JSON.parse(item.content);
     } catch { /* */ }
 
-    return item as VaultMinMeta;
+    return item;
   }
 
 
@@ -225,33 +245,22 @@ export class Vaultifier {
    * @returns {Promise<VaultItem>}
    */
   async getItem(query: VaultItemQuery): Promise<VaultItem> {
-    let item: VaultItem;
+    const { data } = await this.communicator.get(this.urls.getItem(query), true);
 
-    if (query.id) {
-      const { data } = await this.communicator.get(this.urls.getItem(query.id), true);
-
-      item = {
-        id: data.id,
-        value: data.value,
-        accessCount: data.access_count,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-        repoId: data.repo_id,
-        repoName: data.repo_name,
-        dri: data.dri,
-        schemaDri: data.schema_dri,
-        mimeType: data.mime_type,
-        merkleId: data.merkle_id,
-        oydHash: data.oyd_hash,
-        oydSourcePileId: data.oyd_source_pile_id,
-      }
-    }
-    else {
-      const { id } = await this.getValue(query);
-
-      return this.getItem({
-        id,
-      });
+    const item = {
+      id: data.id,
+      value: data.value,
+      accessCount: data.access_count,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+      repoId: data.repo_id,
+      repoName: data.repo_name,
+      dri: data.dri,
+      schemaDri: data.schema_dri,
+      mimeType: data.mime_type,
+      merkleId: data.merkle_id,
+      oydHash: data.oyd_hash,
+      oydSourcePileId: data.oyd_source_pile_id,
     }
 
     try {
@@ -265,10 +274,12 @@ export class Vaultifier {
   /**
    * Retrieve data from the data vault's repository without metadata
    * 
+   * @param {VaultItemsQuery} [query] Query parameters to specify the records that have to be queried
+   * 
    * @returns {Promise<VaultMinMeta[]>} array of JSON data
    */
-  async getValues(): Promise<VaultMinMeta[]> {
-    const { data } = await this.communicator.get(this.urls.getItem(), true);
+  async getValues(query?: VaultItemsQuery): Promise<VaultMinMeta[]> {
+    const { data } = await this.communicator.get(this.urls.getItems(query), true);
 
     // item usually contains JSON data, therefore we try to parse the string
     return data.map((item: any) => {
@@ -278,6 +289,19 @@ export class Vaultifier {
 
       return item as VaultMinMeta;
     });
+  }
+
+  /**
+   * Deletes one item
+   * 
+   * @param query Query parameter to specify the records that have to be deleted
+   * 
+   * @returns {Promise<VaultMinMeta>}
+   */
+  async deleteItem(query: VaultItemQuery): Promise<VaultMinMeta> {
+    const { data } = await this.communicator.delete(this.urls.deleteItem(query), true);
+
+    return data as VaultMinMeta;
   }
 
   /** 

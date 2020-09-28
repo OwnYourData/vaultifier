@@ -31,6 +31,11 @@ export interface NetworkAdapter {
     data?: any,
     headers?: any,
   ) => Promise<NetworkResponse>;
+
+  delete: (
+    url: string,
+    headers?: any
+  ) => Promise<NetworkResponse>
 };
 
 export class Communicator {
@@ -55,6 +60,9 @@ export class Communicator {
         post: (url: string, data?: any, headers?: any) => axios.post(url, data, {
           headers: headers,
         }),
+        delete: (url: string, headers?: any) => axios.delete(url, {
+          headers,
+        }),
       }
   }
 
@@ -77,6 +85,13 @@ export class Communicator {
     return this._placeNetworkCall(
       async () => this.networkAdapter.post(url, data, this._getHeaders(usesAuth)),
       usesAuth
+    );
+  }
+
+  async delete(url: string, usesAuth = false): Promise<NetworkResponse> {
+    return this._placeNetworkCall(
+      async () => this.networkAdapter.delete(url, this._getHeaders(usesAuth)),
+      usesAuth,
     );
   }
 

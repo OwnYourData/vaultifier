@@ -22,6 +22,9 @@ export interface VaultItemQuery {
     id?: number;
     dri?: string;
 }
+export interface VaultItemsQuery {
+    schemaDri: string;
+}
 export interface VaultPostItem {
     content: any;
     dri: string;
@@ -29,7 +32,13 @@ export interface VaultPostItem {
     mimeType: string;
     repo?: string;
 }
-declare type VaultMinMeta = Pick<VaultItem, 'id'>;
+export interface VaultMinMeta {
+    id: number;
+}
+export interface VaultValue {
+    id: number;
+    content: any;
+}
 export declare class Vaultifier {
     baseUrl: string;
     repo: string;
@@ -83,9 +92,9 @@ export declare class Vaultifier {
      *
      * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
      *
-     * @returns {Promise<VaultMinMeta>} the value of the specified item
+     * @returns {Promise<VaultValue>} the value of the specified item
      */
-    getValue(query: VaultItemQuery): Promise<VaultMinMeta>;
+    getValue(query: VaultItemQuery): Promise<VaultValue>;
     /**
      * Posts an item into the data vault's repository, including any metadata
      *
@@ -105,9 +114,19 @@ export declare class Vaultifier {
     /**
      * Retrieve data from the data vault's repository without metadata
      *
+     * @param {VaultItemsQuery} [query] Query parameters to specify the records that have to be queried
+     *
      * @returns {Promise<VaultMinMeta[]>} array of JSON data
      */
-    getValues(): Promise<VaultMinMeta[]>;
+    getValues(query?: VaultItemsQuery): Promise<VaultMinMeta[]>;
+    /**
+     * Deletes one item
+     *
+     * @param query Query parameter to specify the records that have to be deleted
+     *
+     * @returns {Promise<VaultMinMeta>}
+     */
+    deleteItem(query: VaultItemQuery): Promise<VaultMinMeta>;
     /**
      * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
      */
@@ -132,4 +151,3 @@ export declare class Vaultifier {
      */
     static getRepositoryPath: (...path: Array<string>) => string;
 }
-export {};

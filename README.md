@@ -37,3 +37,6 @@ await vaultifier.postItem({
 As currently, there is no npm package available on npmjs.com, the only way is to install this library through github
 
 `npm install github:OwnYourData/vaultifier`
+
+## Examples
+
