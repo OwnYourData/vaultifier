@@ -1,44 +1,5 @@
 import { NetworkAdapter } from './communicator';
-export interface VaultCredentials {
-    appKey: string;
-    appSecret: string;
-}
-export interface VaultItem {
-    id: number;
-    value: any;
-    createdAt: Date;
-    updatedAt: Date;
-    repoId: number;
-    repoName: string;
-    accessCount: number;
-    dri?: string;
-    schemaDri?: string;
-    mimeType?: string;
-    merkleId?: string;
-    oydHash?: string;
-    oydSourcePileId?: string;
-}
-export interface VaultItemQuery {
-    id?: number;
-    dri?: string;
-}
-export interface VaultItemsQuery {
-    schemaDri: string;
-}
-export interface VaultPostItem {
-    content: any;
-    dri: string;
-    schemaDri: string;
-    mimeType: string;
-    repo?: string;
-}
-export interface VaultMinMeta {
-    id: number;
-}
-export interface VaultValue {
-    id: number;
-    content: any;
-}
+import { VaultCredentials, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMinMeta, VaultPostItem, VaultSchema, VaultValue } from './interfaces';
 export declare class Vaultifier {
     baseUrl: string;
     repo: string;
@@ -127,6 +88,12 @@ export declare class Vaultifier {
      * @returns {Promise<VaultMinMeta>}
      */
     deleteItem(query: VaultItemQuery): Promise<VaultMinMeta>;
+    /**
+     * Queries all OCA schemas that are available within the user's vault
+     *
+     * @returns {Promise<VaultSchema[]}
+     */
+    getSchemas(): Promise<VaultSchema[]>;
     /**
      * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
      */

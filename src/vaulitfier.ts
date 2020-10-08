@@ -1,94 +1,17 @@
 import { Communicator, NetworkAdapter } from './communicator';
 import { encrypt } from './crypto';
 import { UnauthorizedError } from './errors';
-
-export interface VaultCredentials {
-  appKey: string,
-  appSecret: string,
-}
-
-export interface VaultItem {
-  // TODO: Do all have correct data type?
-  id: number,
-  value: any,
-  createdAt: Date,
-  updatedAt: Date,
-  repoId: number,
-  repoName: string,
-  accessCount: number,
-  dri?: string,
-  schemaDri?: string,
-  mimeType?: string,
-  merkleId?: string,
-  oydHash?: string,
-  oydSourcePileId?: string,
-};
-
-export interface VaultItemQuery {
-  id?: number,
-  dri?: string,
-}
-
-export interface VaultItemsQuery {
-  schemaDri: string,
-}
-
-export interface VaultPostItem {
-  content: any,
-  dri: string,
-  schemaDri: string,
-  mimeType: string,
-  repo?: string,
-}
-
-export interface VaultMinMeta {
-  id: number,
-}
-
-export interface VaultValue {
-  id: number,
-  content: any,
-}
-
-// TODO: User should be able to change repo on the fly
-class VaultifierUrls {
-  readonly token: string;
-  readonly publicKey: string;
-  readonly privateKey: string;
-  readonly postValue: string;
-  readonly postItem: string;
-
-  constructor(
-    private baseUrl: string,
-    private repo: string,
-  ) {
-    if (new URL(baseUrl).protocol !== 'https:')
-      throw Error('Protocol of baseUrl is not "https".');
-
-    this.token = `${baseUrl}/oauth/token`;
-    this.postValue = `${baseUrl}/api/repos/${repo}/items`;
-    this.postItem = `${baseUrl}/api/data`;
-    this.publicKey = `${baseUrl}/api/repos/${repo}/pub_key`;
-    this.privateKey = `${baseUrl}/api/users/current`;
-  }
-
-  getItem = (query: VaultItemQuery): string => query.id ?
-    `${this.baseUrl}/api/items/${query.id}/details` :
-    `${this.baseUrl}/api/dri/${query.dri}/details`;
-
-  getItems = (query?: VaultItemsQuery): string => query ?
-    `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}` :
-    `${this.baseUrl}/api/repos/${this.repo}/items`;
-
-
-  getValue = (query: VaultItemQuery) => query.dri ?
-    `${this.baseUrl}/api/data?dri=${query.dri}` :
-    `${this.baseUrl}/api/data?id=${query.id}`;
-
-  deleteItem = (query: VaultItemQuery) => query.dri ?
-    `${this.baseUrl}/api/data?dri=${query.dri}` :
-    `${this.baseUrl}/api/data?id=${query.id}`;
-}
+import {
+  VaultCredentials,
+  VaultItem,
+  VaultItemQuery,
+  VaultItemsQuery,
+  VaultMinMeta,
+  VaultPostItem,
+  VaultSchema,
+  VaultValue,
+} from './interfaces';
+import { VaultifierUrls } from './urls';
 
 export class Vaultifier {
   private publicKey?: string;
@@ -98,7 +21,7 @@ export class Vaultifier {
   private communicator: Communicator;
 
   /**
-   * 
+   *
    * @param {string} baseUrl The base url of your data vault (e.g. https://data-vault.eu). Communication is only allowed via https
    * @param {string} repo Repository, where to write to. This is defined in your plugin's manifest
    * @param {string} [credentials] "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
@@ -118,18 +41,31 @@ export class Vaultifier {
 
   /**
    * Initializes Vaultifier (authorizes against data vault)
-   * 
+   *
    * @returns {Promise<void>}
    */
   async initialize(): Promise<void> {
     await this.communicator.refreshToken();
   }
 
+  // async fromRepo(repo: string): Promise<Vaultifier> {
+  //   const vaultifier = new Vaultifier(
+  //     this.baseUrl,
+  //     repo,
+  //     this.credentials,
+  //   );
+
+  //   await vaultifier.initialize();
+  //   await vaultifier.setEnd2EndEncryption(this._usesEncryption);
+
+  //   return vaultifier;
+  // }
+
   /**
    * This enables to intercept all network calls made by Vaultifier
    * This is helpful, if you are already using a library for all your network calls
    * If "setNetworkAdapter" is called without providing an adapter, Vaultifier's default adapter is used
-   * 
+   *
    * @param {NetworkAdapter} [adapter]
    * 
    * @returns {NetworkAdapter} the network adapter that will be used by Vaultifier
@@ -138,9 +74,9 @@ export class Vaultifier {
 
   /**
    * Enables or disables end-to-end encryption (if repository supports it)
-   * 
+   *
    * @param {boolean} [isActive=true]
-   * 
+   *
    * @returns {Promise<void>}
    */
   async setEnd2EndEncryption(isActive = true): Promise<void> {
@@ -175,9 +111,9 @@ export class Vaultifier {
 
   /**
    * Posts a value into the data vault's repository, without any metadata
-   * 
+   *
    * @param {Object} value JSON data to post into the repository
-   * 
+   *
    * @returns {Promise<VaultMinMeta>}
    */
   async postValue(value: any): Promise<VaultMinMeta> {
@@ -190,9 +126,9 @@ export class Vaultifier {
 
   /**
    * Get a specified value from the vault's repository, without any metadata
-   * 
+   *
    * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
-   * 
+   *
    * @returns {Promise<VaultValue>} the value of the specified item
    */
   async getValue(query: VaultItemQuery): Promise<VaultValue> {
@@ -212,7 +148,7 @@ export class Vaultifier {
    * Posts an item into the data vault's repository, including any metadata
    * 
    * @param item data that is going to be passed to the data vault
-   * 
+   *
    * @returns {Promise<VaultMinMeta>}
    */
   async postItem(item: VaultPostItem): Promise<VaultMinMeta> {
@@ -239,9 +175,9 @@ export class Vaultifier {
 
   /**
    * Retrieve data from the data vault's repository including its metadata
-   * 
+   *
    * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
-   * 
+   *
    * @returns {Promise<VaultItem>}
    */
   async getItem(query: VaultItemQuery): Promise<VaultItem> {
@@ -273,9 +209,9 @@ export class Vaultifier {
 
   /**
    * Retrieve data from the data vault's repository without metadata
-   * 
+   *
    * @param {VaultItemsQuery} [query] Query parameters to specify the records that have to be queried
-   * 
+   *
    * @returns {Promise<VaultMinMeta[]>} array of JSON data
    */
   async getValues(query?: VaultItemsQuery): Promise<VaultMinMeta[]> {
@@ -293,9 +229,9 @@ export class Vaultifier {
 
   /**
    * Deletes one item
-   * 
+   *
    * @param query Query parameter to specify the records that have to be deleted
-   * 
+   *
    * @returns {Promise<VaultMinMeta>}
    */
   async deleteItem(query: VaultItemQuery): Promise<VaultMinMeta> {
@@ -304,7 +240,18 @@ export class Vaultifier {
     return data as VaultMinMeta;
   }
 
-  /** 
+  /**
+   * Queries all OCA schemas that are available within the user's vault
+   * 
+   * @returns {Promise<VaultSchema[]}
+   */
+  async getSchemas(): Promise<VaultSchema[]> {
+    const { data } = await this.communicator.get(this.urls.getSchemas(), true);
+
+    return data as VaultSchema[];
+  }
+
+  /**
    * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
    */
   isValid(): boolean {
@@ -327,9 +274,9 @@ export class Vaultifier {
   /**
    * Resolves an install code (usually 6 digits) and returns a set of VaultCredentials, if successful.
    * VaultCredentials are automatically set to the Vaultifier instance as well.
-   * 
+   *
    * @param {string} code Install code, usually 6 digits
-   * 
+   *
    * @returns {Promise<VaultCredentials>}
    */
   async resolveInstallCode(code: string): Promise<VaultCredentials> {
@@ -366,9 +313,9 @@ export class Vaultifier {
 
   /**
    * Creates a valid repo path out of the specified string parameters
-   * 
-   * @param path 
-   * 
+   *
+   * @param path
+   *
    * @returns {string}
    */
   static getRepositoryPath = (...path: Array<string>): string =>

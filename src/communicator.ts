@@ -130,6 +130,9 @@ export class Communicator {
   }
 
   private _getDataHeaders(): DataHeaders {
+    if (this.token === undefined)
+      throw new Error('There is no token available. Did you forget to initalize vaultifier?')
+
     return {
       ...this._baseHeaders,
       Accept: '*/*',
