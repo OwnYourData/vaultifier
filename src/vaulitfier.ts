@@ -248,7 +248,7 @@ export class Vaultifier {
   async getSchemas(): Promise<VaultSchema[]> {
     const { data } = await this.communicator.get(this.urls.getSchemas(), true);
 
-    return data as VaultSchema[];
+    return data.map((x: any) => ({ dri: x })) as VaultSchema[];
   }
 
   /**
