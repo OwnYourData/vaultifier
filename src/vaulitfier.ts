@@ -185,7 +185,7 @@ export class Vaultifier {
 
     const item = {
       id: data.id,
-      value: data.value,
+      content: data.value.content,
       accessCount: data.access_count,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
@@ -201,7 +201,7 @@ export class Vaultifier {
 
     try {
       // item usually contains JSON data, therefore we try to parse the string
-      item.value = JSON.parse(item.value);
+      item.content = JSON.parse(item.content);
     } catch { /* */ }
 
     return item;

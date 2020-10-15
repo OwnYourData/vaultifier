@@ -4,7 +4,7 @@ export interface VaultCredentials {
 }
 export interface VaultItem {
     id: number;
-    value: any;
+    content: any;
     createdAt: Date;
     updatedAt: Date;
     repoId: number;

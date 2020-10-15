@@ -6,7 +6,7 @@ export interface VaultCredentials {
 export interface VaultItem {
   // TODO: Do all have correct data type?
   id: number;
-  value: any;
+  content: any;
   createdAt: Date;
   updatedAt: Date;
   repoId: number;
