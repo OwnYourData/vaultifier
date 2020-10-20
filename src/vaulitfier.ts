@@ -182,10 +182,20 @@ export class Vaultifier {
    */
   async getItem(query: VaultItemQuery): Promise<VaultItem> {
     const { data } = await this.communicator.get(this.urls.getItem(query), true);
+    let content = data.value;
+
+    try {
+      // item usually contains JSON data, therefore we try to parse the string
+      content = JSON.parse(content);
+      // actual data is wrapped another time
+      // TODO: look at this inconsistency
+      if (content.content)
+        content = content.content;
+    } catch { /* */ }
 
     const item = {
       id: data.id,
-      content: data.value.content,
+      content,
       accessCount: data.access_count,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
@@ -198,11 +208,6 @@ export class Vaultifier {
       oydHash: data.oyd_hash,
       oydSourcePileId: data.oyd_source_pile_id,
     }
-
-    try {
-      // item usually contains JSON data, therefore we try to parse the string
-      item.content = JSON.parse(item.content);
-    } catch { /* */ }
 
     return item;
   }
