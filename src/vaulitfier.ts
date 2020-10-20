@@ -246,6 +246,17 @@ export class Vaultifier {
   }
 
   /**
+   * Gets all repositories for the current plugin credentials
+   * 
+   * @returns {Promise<VaultRepo[]}
+   */
+  async getRepos(): Promise<VaultRepo[]> {
+    const { data } = await this.communicator.get(this.urls.getRepos, true);
+
+    return data as VaultRepo[];
+  }
+
+  /**
    * Queries all OCA schemas that are available within the user's vault
    * 
    * @returns {Promise<VaultSchema[]}

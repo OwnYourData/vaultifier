@@ -46,6 +46,11 @@ export interface VaultValue {
   content: any;
 }
 
+export interface VaultRepo {
+  id: number,
+  name: string,
+}
+
 export interface VaultSchema {
   dri: string;
 }

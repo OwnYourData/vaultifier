@@ -7,6 +7,7 @@ export class VaultifierUrls {
   readonly privateKey: string;
   readonly postValue: string;
   readonly postItem: string;
+  readonly getRepos: string;
 
   constructor(private baseUrl: string, private repo: string) {
     if (new URL(baseUrl).protocol !== 'https:')
@@ -17,6 +18,7 @@ export class VaultifierUrls {
     this.postItem = `${baseUrl}/api/data`;
     this.publicKey = `${baseUrl}/api/repos/${repo}/pub_key`;
     this.privateKey = `${baseUrl}/api/users/current`;
+    this.getRepos = `${baseUrl}/api/repos/index`;
   }
 
   getItem = (query: VaultItemQuery): string =>
