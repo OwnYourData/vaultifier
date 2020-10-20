@@ -8,6 +8,7 @@ import {
   VaultItemsQuery,
   VaultMinMeta,
   VaultPostItem,
+  VaultRepo,
   VaultSchema,
   VaultValue,
 } from './interfaces';
@@ -48,18 +49,25 @@ export class Vaultifier {
     await this.communicator.refreshToken();
   }
 
-  // async fromRepo(repo: string): Promise<Vaultifier> {
-  //   const vaultifier = new Vaultifier(
-  //     this.baseUrl,
-  //     repo,
-  //     this.credentials,
-  //   );
+  /**
+   * This creates a new instance of Vaultifier with the given repository name
+   * 
+   * @param {string} repoName Repository that shoudl be used in the returned instance of Vaultifier
+   * 
+   * @returns {Promise<Vaultifier>}
+   */
+  async fromRepo(repoName: string): Promise<Vaultifier> {
+    const vaultifier = new Vaultifier(
+      this.baseUrl,
+      repoName,
+      this.credentials,
+    );
 
-  //   await vaultifier.initialize();
-  //   await vaultifier.setEnd2EndEncryption(this._usesEncryption);
+    await vaultifier.initialize();
+    await vaultifier.setEnd2EndEncryption(this._usesEncryption);
 
-  //   return vaultifier;
-  // }
+    return vaultifier;
+  }
 
   /**
    * This enables to intercept all network calls made by Vaultifier
