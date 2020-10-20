@@ -1,5 +1,5 @@
 import { NetworkAdapter } from './communicator';
-import { VaultCredentials, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMinMeta, VaultPostItem, VaultSchema, VaultValue } from './interfaces';
+import { VaultCredentials, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMinMeta, VaultPostItem, VaultRepo, VaultSchema, VaultValue } from './interfaces';
 export declare class Vaultifier {
     baseUrl: string;
     repo: string;
@@ -20,6 +20,14 @@ export declare class Vaultifier {
      * @returns {Promise<void>}
      */
     initialize(): Promise<void>;
+    /**
+     * This creates a new instance of Vaultifier with the given repository name
+     *
+     * @param {string} repoName Repository that shoudl be used in the returned instance of Vaultifier
+     *
+     * @returns {Promise<Vaultifier>}
+     */
+    fromRepo(repoName: string): Promise<Vaultifier>;
     /**
      * This enables to intercept all network calls made by Vaultifier
      * This is helpful, if you are already using a library for all your network calls
@@ -88,6 +96,12 @@ export declare class Vaultifier {
      * @returns {Promise<VaultMinMeta>}
      */
     deleteItem(query: VaultItemQuery): Promise<VaultMinMeta>;
+    /**
+     * Gets all repositories for the current plugin credentials
+     *
+     * @returns {Promise<VaultRepo[]}
+     */
+    getRepos(): Promise<VaultRepo[]>;
     /**
      * Queries all OCA schemas that are available within the user's vault
      *

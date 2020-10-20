@@ -38,6 +38,10 @@ export interface VaultValue {
     id: number;
     content: any;
 }
+export interface VaultRepo {
+    id: number;
+    name: string;
+}
 export interface VaultSchema {
     dri: string;
 }
