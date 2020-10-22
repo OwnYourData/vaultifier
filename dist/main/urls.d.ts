@@ -10,6 +10,7 @@ export declare class VaultifierUrls {
     readonly getRepos: string;
     constructor(baseUrl: string, repo: string);
     getItem: (query: VaultItemQuery) => string;
+    getMetaItems: (query?: VaultItemsQuery | undefined) => string;
     getItems: (query?: VaultItemsQuery | undefined) => string;
     getValue: (query: VaultItemQuery) => string;
     deleteItem: (query: VaultItemQuery) => string;

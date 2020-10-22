@@ -1,0 +1,15 @@
+export const parseVaultItemMeta = (data) => ({
+    id: data.id,
+    accessCount: data.access_count,
+    createdAt: new Date(data.created_at),
+    updatedAt: new Date(data.updated_at),
+    repoId: data.repo_id,
+    repoName: data.repo_name,
+    dri: data.dri,
+    schemaDri: data.schema_dri,
+    mimeType: data.mime_type,
+    merkleId: data.merkle_id,
+    oydHash: data.oyd_hash,
+    oydSourcePileId: data.oyd_source_pile_id,
+});
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaGVscGVycy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9oZWxwZXJzLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUVBLE1BQU0sQ0FBQyxNQUFNLGtCQUFrQixHQUFHLENBQUMsSUFBUyxFQUFhLEVBQUUsQ0FBQyxDQUFDO0lBQzNELEVBQUUsRUFBRSxJQUFJLENBQUMsRUFBRTtJQUNYLFdBQVcsRUFBRSxJQUFJLENBQUMsWUFBWTtJQUM5QixTQUFTLEVBQUUsSUFBSSxJQUFJLENBQUMsSUFBSSxDQUFDLFVBQVUsQ0FBQztJQUNwQyxTQUFTLEVBQUUsSUFBSSxJQUFJLENBQUMsSUFBSSxDQUFDLFVBQVUsQ0FBQztJQUNwQyxNQUFNLEVBQUUsSUFBSSxDQUFDLE9BQU87SUFDcEIsUUFBUSxFQUFFLElBQUksQ0FBQyxTQUFTO0lBQ3hCLEdBQUcsRUFBRSxJQUFJLENBQUMsR0FBRztJQUNiLFNBQVMsRUFBRSxJQUFJLENBQUMsVUFBVTtJQUMxQixRQUFRLEVBQUUsSUFBSSxDQUFDLFNBQVM7SUFDeEIsUUFBUSxFQUFFLElBQUksQ0FBQyxTQUFTO0lBQ3hCLE9BQU8sRUFBRSxJQUFJLENBQUMsUUFBUTtJQUN0QixlQUFlLEVBQUUsSUFBSSxDQUFDLGtCQUFrQjtDQUN6QyxDQUFDLENBQUMifQ==

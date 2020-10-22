@@ -1,11 +1,13 @@
 import { Communicator, NetworkAdapter } from './communicator';
 import { encrypt } from './crypto';
 import { UnauthorizedError } from './errors';
+import { parseVaultItemMeta } from './helpers';
 import {
   VaultCredentials,
   VaultItem,
   VaultItemQuery,
   VaultItemsQuery,
+  VaultMeta,
   VaultMinMeta,
   VaultPostItem,
   VaultRepo,
@@ -189,33 +191,18 @@ export class Vaultifier {
    * @returns {Promise<VaultItem>}
    */
   async getItem(query: VaultItemQuery): Promise<VaultItem> {
-    const { data } = await this.communicator.get(this.urls.getItem(query), true);
-    let content = data.value;
+    const response = await this.communicator.get(this.urls.getItem(query), true);
+    let data = response.data;
 
     try {
       // item usually contains JSON data, therefore we try to parse the string
-      content = JSON.parse(content);
-      // actual data is wrapped another time
-      // TODO: look at this inconsistency
-      if (content.content)
-        content = content.content;
+      data = JSON.parse(data);
     } catch { /* */ }
 
-    const item = {
-      id: data.id,
-      content,
-      accessCount: data.access_count,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      repoId: data.repo_id,
-      repoName: data.repo_name,
-      dri: data.dri,
-      schemaDri: data.schema_dri,
-      mimeType: data.mime_type,
-      merkleId: data.merkle_id,
-      oydHash: data.oyd_hash,
-      oydSourcePileId: data.oyd_source_pile_id,
-    }
+    const item: VaultItem = {
+      ...parseVaultItemMeta(data),
+      content: data.content,
+    };
 
     return item;
   }
@@ -254,14 +241,31 @@ export class Vaultifier {
   }
 
   /**
+   * Returns a list of vault items, but only with metadata (no content)
+   * 
+   * @param query Query parameter to specify the records that have to be deleted
+   */
+  async getMetaItems(query?: VaultItemsQuery): Promise<VaultMeta[]> {
+    const { data } = await this.communicator.get(this.urls.getMetaItems(query), true);
+
+    return data.map(parseVaultItemMeta);
+  }
+
+  /**
    * Gets all repositories for the current plugin credentials
    * 
    * @returns {Promise<VaultRepo[]}
    */
-  async getRepos(): Promise<VaultRepo[]> {
-    const { data } = await this.communicator.get(this.urls.getRepos, true);
+  async getRepos(): Promise<VaultRepo[] | undefined> {
+    try {
+      const { data } = await this.communicator.get(this.urls.getRepos, true);
+      return data as VaultRepo[];
+    }
+    catch {
+      /* This function is not implemented in semantic containers */
+    }
 
-    return data as VaultRepo[];
+    return;
   }
 
   /**

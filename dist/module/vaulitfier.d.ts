@@ -1,5 +1,5 @@
 import { NetworkAdapter } from './communicator';
-import { VaultCredentials, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMinMeta, VaultPostItem, VaultRepo, VaultSchema, VaultValue } from './interfaces';
+import { VaultCredentials, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMeta, VaultMinMeta, VaultPostItem, VaultRepo, VaultSchema, VaultValue } from './interfaces';
 export declare class Vaultifier {
     baseUrl: string;
     repo: string;
@@ -97,11 +97,17 @@ export declare class Vaultifier {
      */
     deleteItem(query: VaultItemQuery): Promise<VaultMinMeta>;
     /**
+     * Returns a list of vault items, but only with metadata (no content)
+     *
+     * @param query Query parameter to specify the records that have to be deleted
+     */
+    getMetaItems(query?: VaultItemsQuery): Promise<VaultMeta[]>;
+    /**
      * Gets all repositories for the current plugin credentials
      *
      * @returns {Promise<VaultRepo[]}
      */
-    getRepos(): Promise<VaultRepo[]>;
+    getRepos(): Promise<VaultRepo[] | undefined>;
     /**
      * Queries all OCA schemas that are available within the user's vault
      *

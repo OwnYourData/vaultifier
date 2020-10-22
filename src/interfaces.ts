@@ -37,6 +37,8 @@ export interface VaultPostItem {
   repo?: string;
 }
 
+export type VaultMeta = Omit<VaultItem, 'content'>;
+
 export interface VaultMinMeta {
   id: number;
 }

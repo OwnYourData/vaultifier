@@ -31,6 +31,7 @@ export interface VaultPostItem {
     mimeType: string;
     repo?: string;
 }
+export declare type VaultMeta = Omit<VaultItem, 'content'>;
 export interface VaultMinMeta {
     id: number;
 }
