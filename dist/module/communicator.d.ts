@@ -6,10 +6,12 @@ export interface NetworkAdapter {
     delete: (url: string, headers?: any) => Promise<NetworkResponse>;
 }
 export declare class Communicator {
-    tokenCallback: () => Promise<string | undefined>;
     private token?;
     private networkAdapter;
-    constructor(tokenCallback: () => Promise<string | undefined>);
+    private tokenCallback?;
+    constructor();
+    private _usesAuthentication;
+    setTokenCallback: (callback: () => Promise<string>) => void;
     setNetworkAdapter: (adapter?: NetworkAdapter | undefined) => NetworkAdapter;
     refreshToken(): Promise<string | undefined>;
     isValid(): boolean;

@@ -2,6 +2,7 @@ import { VaultItemQuery, VaultItemsQuery } from './interfaces';
 export declare class VaultifierUrls {
     private baseUrl;
     private repo;
+    readonly info: string;
     readonly token: string;
     readonly publicKey: string;
     readonly privateKey: string;
@@ -15,4 +16,5 @@ export declare class VaultifierUrls {
     getValue: (query: VaultItemQuery) => string;
     deleteItem: (query: VaultItemQuery) => string;
     getSchemas: () => string;
+    resolveInstallCode: (code: string) => string;
 }

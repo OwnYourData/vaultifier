@@ -1,5 +1,9 @@
 import { NetworkAdapter } from './communicator';
 import { VaultCredentials, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMeta, VaultMinMeta, VaultPostItem, VaultRepo, VaultSchema, VaultValue } from './interfaces';
+interface VaultSupport {
+    repos: boolean;
+    authentication: boolean;
+}
 export declare class Vaultifier {
     baseUrl: string;
     repo: string;
@@ -7,6 +11,7 @@ export declare class Vaultifier {
     private publicKey?;
     private urls;
     private communicator;
+    private supports?;
     /**
      *
      * @param {string} baseUrl The base url of your data vault (e.g. https://data-vault.eu). Communication is only allowed via https
@@ -15,7 +20,22 @@ export declare class Vaultifier {
      */
     constructor(baseUrl: string, repo: string, credentials?: VaultCredentials | undefined);
     /**
-     * Initializes Vaultifier (authorizes against data vault)
+     * Returns an object that can be checked for supported features of the provided endpoint
+     */
+    getVaultSupport(): Promise<VaultSupport>;
+    /**
+     * Sets the vault's credentials
+     *
+     * @param credentials Object containing credentials
+     */
+    setCredentials(credentials: VaultCredentials): void;
+    /**
+     * Returns true, if vault has (probably) valid credentials
+     * This does not indicate, whether the vault will accept the credentials or not!
+     */
+    hasCredentials(): boolean;
+    /**
+     * Initializes Vaultifier (authorizes against data vault if necessary)
      *
      * @returns {Promise<void>}
      */
@@ -117,10 +137,9 @@ export declare class Vaultifier {
     /**
      * At this time, vaultifier always needs appKey and appSecret. This might change in the future.
      *
-     * @returns {boolean} true, if Vaultifier has all minimum necessary data and was initalized correctly.
+     * @returns true, if Vaultifier has all minimum necessary data and was initalized correctly.
      */
-    isValid(): boolean;
-    private _getInstallCodeUrl;
+    isValid(): Promise<boolean>;
     /**
      * Resolves an install code (usually 6 digits) and returns a set of VaultCredentials, if successful.
      * VaultCredentials are automatically set to the Vaultifier instance as well.
@@ -140,3 +159,4 @@ export declare class Vaultifier {
      */
     static getRepositoryPath: (...path: Array<string>) => string;
 }
+export {};

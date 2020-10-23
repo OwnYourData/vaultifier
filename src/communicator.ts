@@ -41,12 +41,19 @@ export interface NetworkAdapter {
 export class Communicator {
   private token?: string;
   private networkAdapter: NetworkAdapter;
+  private tokenCallback?: () => Promise<string>;
 
-  constructor(
-    public tokenCallback: () => Promise<string | undefined>,
-  ) {
+  constructor() {
     // set default implementation
     this.networkAdapter = this.setNetworkAdapter();
+  }
+
+  private _usesAuthentication(): boolean {
+    return !!this.tokenCallback;
+  }
+
+  setTokenCallback = (callback: () => Promise<string>) => {
+    this.tokenCallback = callback;
   }
 
   setNetworkAdapter = (adapter?: NetworkAdapter): NetworkAdapter => {
@@ -67,11 +74,14 @@ export class Communicator {
   }
 
   async refreshToken(): Promise<string | undefined> {
-    return this.token = await this.tokenCallback();
+    if (this.tokenCallback)
+      return this.token = await this.tokenCallback();
+
+    return undefined;
   }
 
   isValid(): boolean {
-    return !!this.token;
+    return (this._usesAuthentication() && !!this.token) || !this.token;
   }
 
   async get(url: string, usesAuth = false): Promise<NetworkResponse> {
@@ -103,7 +113,7 @@ export class Communicator {
 
       // if data vault responds with a 403, our token is expired
       // therefore we fetch a new one and give the call another try
-      if (response.status === 403) {
+      if (response.status === 403 && this._usesAuthentication()) {
         this.token = await this.refreshToken();
         response = await callable();
       }
@@ -120,7 +130,7 @@ export class Communicator {
   }
 
   private _getHeaders(usesAuth = false): BaseHeaders {
-    return usesAuth ?
+    return usesAuth && this._usesAuthentication() ?
       this._getDataHeaders() :
       this._baseHeaders;
   }

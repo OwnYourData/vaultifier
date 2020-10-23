@@ -16,12 +16,19 @@ import {
 } from './interfaces';
 import { VaultifierUrls } from './urls';
 
+interface VaultSupport {
+  repos: boolean,
+  authentication: boolean,
+}
+
 export class Vaultifier {
   private publicKey?: string;
 
   private urls: VaultifierUrls;
 
   private communicator: Communicator;
+
+  private supports?: VaultSupport;
 
   /**
    *
@@ -39,16 +46,54 @@ export class Vaultifier {
       repo
     );
 
-    this.communicator = new Communicator(() => this._authorize());
+    this.communicator = new Communicator();
   }
 
   /**
-   * Initializes Vaultifier (authorizes against data vault)
+   * Returns an object that can be checked for supported features of the provided endpoint
+   */
+  async getVaultSupport(): Promise<VaultSupport> {
+    // only fetch it once
+    if (this.supports)
+      return this.supports;
+
+    const { data } = await this.communicator.get(this.urls.info);
+
+    return this.supports = {
+      repos: !!data.repos,
+      authentication: !!data.auth,
+    };
+  }
+
+  /**
+   * Sets the vault's credentials
+   * 
+   * @param credentials Object containing credentials
+   */
+  setCredentials(credentials: VaultCredentials): void {
+    this.credentials = credentials;
+  }
+
+  /**
+   * Returns true, if vault has (probably) valid credentials
+   * This does not indicate, whether the vault will accept the credentials or not!
+   */
+  hasCredentials(): boolean {
+    return !!this.credentials && !!this.credentials.appKey && !!this.credentials.appSecret;
+  }
+
+  /**
+   * Initializes Vaultifier (authorizes against data vault if necessary)
    *
    * @returns {Promise<void>}
    */
   async initialize(): Promise<void> {
-    await this.communicator.refreshToken();
+    const supports = await this.getVaultSupport()
+
+    if (supports.authentication) {
+      this.communicator.setTokenCallback(() => this._authorize());
+      await this.communicator.refreshToken();
+    }
   }
 
   /**
@@ -282,9 +327,9 @@ export class Vaultifier {
   /**
    * At this time, vaultifier always needs appKey and appSecret. This might change in the future.
    * 
-   * @returns {boolean} true, if Vaultifier has all minimum necessary data and was initalized correctly.
+   * @returns true, if Vaultifier has all minimum necessary data and was initalized correctly.
    */
-  isValid(): boolean {
+  async isValid(): Promise<boolean> {
     try {
       // test if is valid url
       new URL(this.baseUrl);
@@ -293,13 +338,15 @@ export class Vaultifier {
       return false;
     }
 
-    if (!this.credentials?.appKey || !this.credentials?.appSecret)
+    if (false === (
+      (await this.getVaultSupport()).authentication &&
+      this.credentials?.appKey &&
+      this.credentials.appSecret)
+    )
       return false;
 
     return this.communicator.isValid();
   }
-
-  private _getInstallCodeUrl = (code: string) => `${this.baseUrl}/api/install/${code}`;
 
   /**
    * Resolves an install code (usually 6 digits) and returns a set of VaultCredentials, if successful.
@@ -310,7 +357,7 @@ export class Vaultifier {
    * @returns {Promise<VaultCredentials>}
    */
   async resolveInstallCode(code: string): Promise<VaultCredentials> {
-    const { data } = await this.communicator.get(this._getInstallCodeUrl(code), false);
+    const { data } = await this.communicator.get(this.urls.resolveInstallCode(code), false);
 
     this.credentials = {
       appKey: data.key as string,
