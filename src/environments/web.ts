@@ -20,6 +20,11 @@ export abstract class VaultifierWeb {
   ): Vaultifier {
     const params = new URL(window.location.href).searchParams;
 
+    const baseUrl = params.get(baseUrlParamName);
+
+    if (!baseUrl)
+      throw new Error('PIA_URL was not specified in url params.');
+
     return new Vaultifier(
       params.get(baseUrlParamName) as string,
       repo,
