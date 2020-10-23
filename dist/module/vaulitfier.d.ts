@@ -115,7 +115,9 @@ export declare class Vaultifier {
      */
     getSchemas(): Promise<VaultSchema[]>;
     /**
-     * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
+     * At this time, vaultifier always needs appKey and appSecret. This might change in the future.
+     *
+     * @returns {boolean} true, if Vaultifier has all minimum necessary data and was initalized correctly.
      */
     isValid(): boolean;
     private _getInstallCodeUrl;

@@ -280,7 +280,9 @@ export class Vaultifier {
   }
 
   /**
-   * @returns {boolean} true, if Vaultifier has all necessary data and was initalized correctly.
+   * At this time, vaultifier always needs appKey and appSecret. This might change in the future.
+   * 
+   * @returns {boolean} true, if Vaultifier has all minimum necessary data and was initalized correctly.
    */
   isValid(): boolean {
     try {
@@ -291,7 +293,7 @@ export class Vaultifier {
       return false;
     }
 
-    if (!this.repo || !this.credentials?.appKey || !this.credentials?.appSecret)
+    if (!this.credentials?.appKey || !this.credentials?.appSecret)
       return false;
 
     return this.communicator.isValid();
