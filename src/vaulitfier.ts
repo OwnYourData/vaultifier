@@ -198,6 +198,33 @@ export class Vaultifier {
     return item;
   }
 
+  /**
+   * Contains all necessary transformations and checks for posting/putting data to the data vault
+   * 
+   * @param item Data to be posted/put to the data vault
+   */
+  private getPutPostValue(item: VaultPostItem): string {
+    item.content = this.encryptOrNot(item.content);
+
+    if (!item.repo)
+      item.repo = this.repo;
+
+    const { content, dri, mimeType, schemaDri, repo } = item;
+
+    // POST/PUT object is slightly different to our internal structure
+    const dataToPost: any = {
+      content,
+      dri,
+      mime_type: mimeType,
+      schema_dri: schemaDri,
+    }
+
+    if (this.supports?.repos)
+      dataToPost.table_name = repo;
+
+    return JSON.stringify([dataToPost]);
+  }
+
 
   /**
    * Posts an item into the data vault's repository, including any metadata
@@ -207,23 +234,18 @@ export class Vaultifier {
    * @returns {Promise<VaultMinMeta>}
    */
   async postItem(item: VaultPostItem): Promise<VaultMinMeta> {
-    item.content = this.encryptOrNot(item.content);
+    const res = await this.communicator.post(this.urls.postItem, true, this.getPutPostValue(item));
 
-    if (!item.repo)
-      item.repo = this.repo;
+    return res.data as VaultMinMeta;
+  }
 
-    const { content, dri, mimeType, schemaDri, repo } = item;
-
-    // POST object is slightly different to our internal structure
-    const dataToPost = {
-      content,
-      dri,
-      table_name: repo,
-      mime_type: mimeType,
-      schema_dri: schemaDri,
-    }
-
-    const res = await this.communicator.post(this.urls.postItem, true, JSON.stringify(dataToPost));
+  /**
+   * Puts an item into the data vault's repository (update), including any metadata
+   * 
+   * @param item data that is going to be passed to the data vault for updating the record
+   */
+  async updateItem(item: VaultPostItem): Promise<VaultMinMeta> {
+    const res = await this.communicator.put(this.urls.putItem, true, this.getPutPostValue(item));
 
     return res.data as VaultMinMeta;
   }
