@@ -129,7 +129,7 @@ export class Communicator {
 
       // if data vault responds with a 403, our token is expired
       // therefore we fetch a new one and give the call another try
-      if (response.status === 403 && this._usesAuthentication()) {
+      if (response.status === 401 && this._usesAuthentication()) {
         this.token = await this.refreshToken();
         response = await callable();
       }
