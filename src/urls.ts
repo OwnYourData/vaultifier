@@ -20,7 +20,8 @@ export class VaultifierUrls {
     this.token = `${baseUrl}/oauth/token`;
     this.postValue = `${baseUrl}/api/data`;
     this.postItem = `${baseUrl}/api/data`;
-    this.publicKey = `${baseUrl}/api/repos/${repo}/pub_key`;
+    // oyd.settings is the default repo for storing the public key
+    this.publicKey = `${baseUrl}/api/repos/${repo || 'oyd.settings'}/pub_key`;
     this.privateKey = `${baseUrl}/api/users/current`;
     this.getRepos = `${baseUrl}/api/repos/index`;
   }
