@@ -1,6 +1,12 @@
-export declare const encrypt: (text: string, publicKey: string) => Promise<{
+export interface CryptoObject {
     value: string;
     nonce: string;
-    version: string;
-}>;
-export declare const decrypt: (text: string, cipher: string, nonce: string) => Promise<Uint8Array>;
+    version?: string;
+}
+export interface CipherObject {
+    cipher: string;
+    isHashed?: boolean;
+}
+export declare const encrypt: (text: string, publicKey: string) => Promise<CryptoObject>;
+export declare const decrypt: (cryptoObject: CryptoObject, cipherObject: CipherObject) => Promise<string>;
+export declare const isEncrypted: (item: any) => boolean;

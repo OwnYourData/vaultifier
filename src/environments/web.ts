@@ -1,4 +1,5 @@
 import { Vaultifier } from "..";
+import { PrivateKeyCredentials } from "../interfaces";
 
 export abstract class VaultifierWeb {
 
@@ -17,6 +18,8 @@ export abstract class VaultifierWeb {
     baseUrlParamName = 'PIA_URL',
     appKeyParamName = 'APP_KEY',
     appSecretParamName = 'APP_SECRET',
+    masterKeyParamName = 'MASTER_KEY',
+    nonceParamName = 'NONCE',
   ): Vaultifier {
     const params = new URL(window.location.href).searchParams;
 
@@ -25,13 +28,22 @@ export abstract class VaultifierWeb {
     if (!baseUrl)
       throw new Error('PIA_URL was not specified in url params.');
 
+    const masterKey = params.get(masterKeyParamName);
+    const nonce = params.get(nonceParamName);
+
+    const end2end: PrivateKeyCredentials | undefined = (masterKey && nonce) ? {
+      masterKey,
+      nonce,
+    } : undefined;
+
     return new Vaultifier(
       params.get(baseUrlParamName) as string,
       repo,
       {
         appKey: params.get(appKeyParamName) as string,
         appSecret: params.get(appSecretParamName) as string
-      }
+      },
+      end2end,
     );
   }
 }

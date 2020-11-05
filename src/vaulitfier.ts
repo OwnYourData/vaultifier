@@ -1,9 +1,11 @@
 import { Communicator, NetworkAdapter } from './communicator';
-import { encrypt } from './crypto';
+import { CryptoObject, decrypt, encrypt, isEncrypted } from './crypto';
 import { UnauthorizedError } from './errors';
 import { parseVaultItemMeta } from './helpers';
 import {
+  PrivateKeyCredentials,
   VaultCredentials,
+  VaultEncryptionSupport,
   VaultItem,
   VaultItemQuery,
   VaultItemsQuery,
@@ -23,6 +25,7 @@ interface VaultSupport {
 
 export class Vaultifier {
   private publicKey?: string;
+  private privateKey?: string;
 
   private urls: VaultifierUrls;
 
@@ -32,14 +35,15 @@ export class Vaultifier {
 
   /**
    *
-   * @param {string} baseUrl The base url of your data vault (e.g. https://data-vault.eu). Communication is only allowed via https
-   * @param {string} repo Repository, where to write to. This is defined in your plugin's manifest
-   * @param {string} [credentials] "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
+   * @param baseUrl The base url of your data vault (e.g. https://data-vault.eu).
+   * @param repo Repository, where to write to. This is defined in your plugin's manifest
+   * @param credentials "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
    */
   constructor(
     public baseUrl: string,
     public repo: string,
-    public credentials?: VaultCredentials
+    public credentials?: VaultCredentials,
+    public privateKeyCredentials?: PrivateKeyCredentials,
   ) {
     this.urls = new VaultifierUrls(
       baseUrl,
@@ -57,6 +61,7 @@ export class Vaultifier {
     if (this.supports)
       return this.supports;
 
+    // TODO: fetch information about the container (e.g. name) -> /api/info
     const { data } = await this.communicator.get(this.urls.info);
 
     return this.supports = {
@@ -97,23 +102,18 @@ export class Vaultifier {
   }
 
   /**
-   * This creates a new instance of Vaultifier with the given repository name
+   * This switches to the given repository name
+   * As the data vault also provides the functionality to have public keys per repo
+   * this function could be used to create a new instance of Vaultifier
+   * But as this functionality is not yet active, it just changes the repo without doing anything further
    * 
-   * @param {string} repoName Repository that shoudl be used in the returned instance of Vaultifier
-   * 
-   * @returns {Promise<Vaultifier>}
+   * @param repoName Repository that should be used in the returned instance of Vaultifier
    */
   async fromRepo(repoName: string): Promise<Vaultifier> {
-    const vaultifier = new Vaultifier(
-      this.baseUrl,
-      repoName,
-      this.credentials,
-    );
+    this.repo = repoName;
+    this.urls.setRepo(repoName);
 
-    await vaultifier.initialize();
-    await vaultifier.setEnd2EndEncryption(this._usesEncryption);
-
-    return vaultifier;
+    return this;
   }
 
   /**
@@ -128,40 +128,79 @@ export class Vaultifier {
   setNetworkAdapter = (adapter?: NetworkAdapter): NetworkAdapter => this.communicator.setNetworkAdapter(adapter);
 
   /**
-   * Enables or disables end-to-end encryption (if repository supports it)
+   * Enables or disables end-to-end encryption
    *
-   * @param {boolean} [isActive=true]
-   *
-   * @returns {Promise<void>}
+   * @param isActive
    */
-  async setEnd2EndEncryption(isActive = true): Promise<void> {
-    if (isActive) {
-      try {
-        const pubKeyResponse = await this.communicator.get(this.urls.publicKey, true);
-        this.publicKey = pubKeyResponse.data.public_key;
-
-        // TODO:
-        const privateKeyResponse = await this.communicator.get(this.urls.privateKey, true);
-        console.log(privateKeyResponse);
-
-        return;
-      }
-      catch { /* */ }
+  async setEnd2EndEncryption(isActive = true): Promise<VaultEncryptionSupport> {
+    if (!isActive) {
+      this.publicKey = undefined;
+      this.privateKey = undefined;
     }
 
-    this.publicKey = undefined;
+    try {
+      this.publicKey = (await this.communicator.get(this.urls.publicKey(), true))
+        .data.public_key;
 
-    // TODO: should return true or false, whether e2e encryption was enabled or not
+      if (this.privateKeyCredentials) {
+        const { nonce, masterKey } = this.privateKeyCredentials;
+
+        const encryptedPassword = (await this.communicator.get(this.urls.getEncryptedPassword(this.privateKeyCredentials.nonce)))
+          .data.cipher;
+        const password = await decrypt({
+          value: encryptedPassword,
+          nonce,
+        }, {
+          cipher: masterKey,
+          isHashed: true,
+        });
+
+        const encryptedPrivateKey = JSON.parse(
+          (await this.communicator.get(this.urls.privateKey, true))
+            .data.password_key
+        );
+
+        this.privateKey = await decrypt(encryptedPrivateKey, { cipher: password });
+      }
+    }
+    catch { /* Yeah I know, error handling could be done better here... */ }
+
+    return this.getEncryptionSupport();
+  }
+
+  getEncryptionSupport(): VaultEncryptionSupport {
+    return {
+      supportsEncryption: !!this.publicKey,
+      supportsDecryption: !!this.privateKey,
+    };
   }
 
   private get _usesEncryption(): boolean { return this.publicKey !== undefined && this.publicKey.length > 0 }
-  private encryptOrNot(value: any): any {
-    if (this._usesEncryption) {
+  private async encryptOrNot(value: any): Promise<CryptoObject | any> {
+    if (
+      this._usesEncryption &&
+      this.publicKey
+    ) {
       const dataString = JSON.stringify(value);
-      return encrypt(dataString, this.publicKey as string);
+      return encrypt(dataString, this.publicKey);
     }
 
     return value;
+  }
+  private async decryptOrNot(item: any): Promise<any> {
+    if (
+      this._usesEncryption &&
+      this.privateKey &&
+      isEncrypted(item)
+    ) {
+      const decrypted = await decrypt(item, { cipher: this.privateKey });
+
+      try {
+        return JSON.parse(decrypted);
+      } catch { /* the encrypted data is delivered as string */ }
+    }
+
+    return item;
   }
 
   /**
@@ -203,8 +242,8 @@ export class Vaultifier {
    * 
    * @param item Data to be posted/put to the data vault
    */
-  private getPutPostValue(item: VaultPostItem): string {
-    item.content = this.encryptOrNot(item.content);
+  private async getPutPostValue(item: VaultPostItem): Promise<string> {
+    item.content = await this.encryptOrNot(item.content);
 
     if (!item.repo)
       item.repo = this.repo;
@@ -222,7 +261,7 @@ export class Vaultifier {
     if (this.supports?.repos)
       dataToPost.table_name = repo;
 
-    return JSON.stringify([dataToPost]);
+    return JSON.stringify(dataToPost);
   }
 
 
@@ -234,7 +273,7 @@ export class Vaultifier {
    * @returns {Promise<VaultMinMeta>}
    */
   async postItem(item: VaultPostItem): Promise<VaultMinMeta> {
-    const res = await this.communicator.post(this.urls.postItem, true, this.getPutPostValue(item));
+    const res = await this.communicator.post(this.urls.postItem, true, await this.getPutPostValue(item));
 
     return res.data as VaultMinMeta;
   }
@@ -245,7 +284,7 @@ export class Vaultifier {
    * @param item data that is going to be passed to the data vault for updating the record
    */
   async updateItem(item: VaultPostItem): Promise<VaultMinMeta> {
-    const res = await this.communicator.put(this.urls.putItem, true, this.getPutPostValue(item));
+    const res = await this.communicator.put(this.urls.putItem, true, await this.getPutPostValue(item));
 
     return res.data as VaultMinMeta;
   }
@@ -268,7 +307,8 @@ export class Vaultifier {
 
     const item: VaultItem = {
       ...parseVaultItemMeta(data),
-      content: data.content,
+      isEncrypted: isEncrypted(data.content),
+      content: await this.decryptOrNot(data.content),
     };
 
     return item;

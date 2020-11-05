@@ -1,5 +1,5 @@
 import { NetworkAdapter } from './communicator';
-import { VaultCredentials, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMeta, VaultMinMeta, VaultPostItem, VaultRepo, VaultSchema, VaultValue } from './interfaces';
+import { PrivateKeyCredentials, VaultCredentials, VaultEncryptionSupport, VaultItem, VaultItemQuery, VaultItemsQuery, VaultMeta, VaultMinMeta, VaultPostItem, VaultRepo, VaultSchema, VaultValue } from './interfaces';
 interface VaultSupport {
     repos: boolean;
     authentication: boolean;
@@ -8,17 +8,19 @@ export declare class Vaultifier {
     baseUrl: string;
     repo: string;
     credentials?: VaultCredentials | undefined;
+    privateKeyCredentials?: PrivateKeyCredentials | undefined;
     private publicKey?;
+    private privateKey?;
     private urls;
     private communicator;
     private supports?;
     /**
      *
-     * @param {string} baseUrl The base url of your data vault (e.g. https://data-vault.eu). Communication is only allowed via https
-     * @param {string} repo Repository, where to write to. This is defined in your plugin's manifest
-     * @param {string} [credentials] "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
+     * @param baseUrl The base url of your data vault (e.g. https://data-vault.eu).
+     * @param repo Repository, where to write to. This is defined in your plugin's manifest
+     * @param credentials "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
      */
-    constructor(baseUrl: string, repo: string, credentials?: VaultCredentials | undefined);
+    constructor(baseUrl: string, repo: string, credentials?: VaultCredentials | undefined, privateKeyCredentials?: PrivateKeyCredentials | undefined);
     /**
      * Returns an object that can be checked for supported features of the provided endpoint
      */
@@ -41,11 +43,12 @@ export declare class Vaultifier {
      */
     initialize(): Promise<void>;
     /**
-     * This creates a new instance of Vaultifier with the given repository name
+     * This switches to the given repository name
+     * As the data vault also provides the functionality to have public keys per repo
+     * this function could be used to create a new instance of Vaultifier
+     * But as this functionality is not yet active, it just changes the repo without doing anything further
      *
-     * @param {string} repoName Repository that shoudl be used in the returned instance of Vaultifier
-     *
-     * @returns {Promise<Vaultifier>}
+     * @param repoName Repository that should be used in the returned instance of Vaultifier
      */
     fromRepo(repoName: string): Promise<Vaultifier>;
     /**
@@ -59,15 +62,15 @@ export declare class Vaultifier {
      */
     setNetworkAdapter: (adapter?: NetworkAdapter | undefined) => NetworkAdapter;
     /**
-     * Enables or disables end-to-end encryption (if repository supports it)
+     * Enables or disables end-to-end encryption
      *
-     * @param {boolean} [isActive=true]
-     *
-     * @returns {Promise<void>}
+     * @param isActive
      */
-    setEnd2EndEncryption(isActive?: boolean): Promise<void>;
+    setEnd2EndEncryption(isActive?: boolean): Promise<VaultEncryptionSupport>;
+    getEncryptionSupport(): VaultEncryptionSupport;
     private get _usesEncryption();
     private encryptOrNot;
+    private decryptOrNot;
     /**
      * Posts a value into the data vault's repository, without any metadata
      *
@@ -85,6 +88,12 @@ export declare class Vaultifier {
      */
     getValue(query: VaultItemQuery): Promise<VaultValue>;
     /**
+     * Contains all necessary transformations and checks for posting/putting data to the data vault
+     *
+     * @param item Data to be posted/put to the data vault
+     */
+    private getPutPostValue;
+    /**
      * Posts an item into the data vault's repository, including any metadata
      *
      * @param item data that is going to be passed to the data vault
@@ -92,6 +101,12 @@ export declare class Vaultifier {
      * @returns {Promise<VaultMinMeta>}
      */
     postItem(item: VaultPostItem): Promise<VaultMinMeta>;
+    /**
+     * Puts an item into the data vault's repository (update), including any metadata
+     *
+     * @param item data that is going to be passed to the data vault for updating the record
+     */
+    updateItem(item: VaultPostItem): Promise<VaultMinMeta>;
     /**
      * Retrieve data from the data vault's repository including its metadata
      *

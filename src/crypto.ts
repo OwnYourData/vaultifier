@@ -1,14 +1,16 @@
-import sodium from 'libsodium-wrappers';
+import sodium, { from_hex, from_string, to_hex, to_string } from 'libsodium-wrappers';
 
-const hexStringToByte = (value: string) => {
-  if (!value) {
-    return new Uint8Array();
-  }
-  const a = [];
-  for (let i = 0, len = value.length; i < len; i += 2) {
-    a.push(parseInt(value.substr(i, 2), 16));
-  }
-  return new Uint8Array(a);
+import { onlyContainsHex } from './utils/core-utils';
+
+export interface CryptoObject {
+  value: string,
+  nonce: string,
+  version?: string,
+}
+
+export interface CipherObject {
+  cipher: string,
+  isHashed?: boolean,
 }
 
 const createSha256Hex = async (value: string): Promise<string> => {
@@ -18,10 +20,8 @@ const createSha256Hex = async (value: string): Promise<string> => {
     // @ts-ignore
     const msgBuffer = new TextEncoder('utf-8').encode(value);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
 
-    return hashHex;
+    return to_hex(new Uint8Array(hashBuffer));
   }
   // node environment
   else {
@@ -34,37 +34,60 @@ const createSha256Hex = async (value: string): Promise<string> => {
   }
 }
 
+const cryptoVersion = '0.4';
 const sharedSecret = 'auth';
 // the hash is created globally, so we don't use computing power to recreate it over and over
 const sharedSecretHash = createSha256Hex(sharedSecret);
 
-export const encrypt = async (text: string, publicKey: string) => {
-  const nonce = Buffer.from(sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES));
+export const encrypt = async (text: string, publicKey: string): Promise<CryptoObject> => {
+  const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
   const cipherMsg = sodium.crypto_box_easy(
-    Buffer.from(text),
+    from_string(text),
     nonce,
-    Buffer.from(hexStringToByte(publicKey)),
-    Buffer.from(hexStringToByte(await sharedSecretHash)),
+    from_hex(publicKey),
+    from_hex(await sharedSecretHash),
   );
 
   return {
-    value: Buffer.from(cipherMsg).toString('hex'),
-    nonce: nonce.toString('hex'),
-    version: '0.4',
+    value: to_hex(cipherMsg),
+    nonce: to_hex(nonce),
+    version: cryptoVersion,
   };
 }
 
 // SEE: https://libsodium.gitbook.io/doc/public-key_cryptography/authenticated_encryption
-export const decrypt = async (text: string, cipher: string, nonce: string) => {
-  const passwordHash = await createSha256Hex(cipher);
-  const privateKeyHash = await sharedSecretHash;
+export const decrypt = async (cryptoObject: CryptoObject, cipherObject: CipherObject): Promise<string> => {
+  const { value, nonce, version } = cryptoObject;
+  const { cipher } = cipherObject;
+  let { isHashed } = cipherObject;
+
+  if (isHashed === undefined)
+    isHashed = false;
+
+  if (!!version && version !== cryptoVersion)
+    throw new Error(`The provided crypto version (${version}) does not match our internal crypto version (${cryptoVersion})`);
+
+  const _text = from_hex(value);
+  const _nonce = from_hex(nonce);
+  const _privKey = from_hex(await sharedSecretHash);
+  // calculates the our private key's public key
+  const _pubKey = sodium.crypto_scalarmult_base(_privKey);
+  const _cipher = from_hex(isHashed ? cipher : await createSha256Hex(cipher));
 
   const decrypted = sodium.crypto_box_open_easy(
-    text,
-    Buffer.from(nonce),
-    sodium.crypto_scalarmult_base(Buffer.from(privateKeyHash)),
-    Buffer.from(passwordHash),
+    _text,
+    _nonce,
+    _pubKey,
+    _cipher,
   );
 
-  return decrypted;
+  return to_string(decrypted);
+}
+
+export const isEncrypted = (item: any): boolean => {
+  return !!(item.value &&
+    onlyContainsHex(item.value) &&
+    item.nonce &&
+    onlyContainsHex(item.nonce) &&
+    item.version);
 }

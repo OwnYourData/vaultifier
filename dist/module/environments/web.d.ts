@@ -10,5 +10,5 @@ export declare abstract class VaultifierWeb {
      *
      * @returns {Vaultifier} a new Vaultifier instance
      */
-    static create(repo: string, baseUrlParamName?: string, appKeyParamName?: string, appSecretParamName?: string): Vaultifier;
+    static create(repo: string, baseUrlParamName?: string, appKeyParamName?: string, appSecretParamName?: string, masterKeyParamName?: string, nonceParamName?: string): Vaultifier;
 }

@@ -3,6 +3,16 @@ export interface VaultCredentials {
   appSecret: string;
 }
 
+export interface PrivateKeyCredentials {
+  masterKey: string,
+  nonce: string,
+}
+
+export interface VaultEncryptionSupport {
+  supportsEncryption: boolean,
+  supportsDecryption: boolean,
+}
+
 export interface VaultItem {
   // TODO: Do all have correct data type?
   id: number;
@@ -12,6 +22,7 @@ export interface VaultItem {
   repoId: number;
   repoName: string;
   accessCount: number;
+  isEncrypted: boolean;
   dri?: string;
   schemaDri?: string;
   mimeType?: string;
@@ -37,7 +48,7 @@ export interface VaultPostItem {
   repo?: string;
 }
 
-export type VaultMeta = Omit<VaultItem, 'content'>;
+export type VaultMeta = Omit<VaultItem, 'content' | 'isEncrypted'>;
 
 export interface VaultMinMeta {
   id: number;

@@ -3,8 +3,8 @@ import { VaultItemQuery, VaultItemsQuery } from './interfaces';
 // TODO: User should be able to change repo on the fly
 export class VaultifierUrls {
   readonly info: string;
+  readonly support: string;
   readonly token: string;
-  readonly publicKey: string;
   readonly privateKey: string;
   readonly postValue: string;
   readonly postItem: string;
@@ -18,12 +18,11 @@ export class VaultifierUrls {
     //   throw Error('Protocol of baseUrl is not "https".');
 
     this.info = `${baseUrl}/api/active`;
+    this.support = `${baseUrl}/api/support`
     this.token = `${baseUrl}/oauth/token`;
     this.postValue = `${baseUrl}/api/data`;
     this.postItem = `${baseUrl}/api/data`;
     this.putItem = `${baseUrl}/api/data`;
-    // oyd.settings is the default repo for storing the public key
-    this.publicKey = `${baseUrl}/api/repos/${repo || 'oyd.settings'}/pub_key`;
     this.privateKey = `${baseUrl}/api/users/current`;
     this.getRepos = `${baseUrl}/api/repos/index`;
   }
@@ -56,4 +55,10 @@ export class VaultifierUrls {
 
   getSchemas = () => `${this.baseUrl}/api/meta/schemas`;
   resolveInstallCode = (code: string) => `${this.baseUrl}/api/install/${code}`;
+  publicKey = () =>
+    // oyd.settings is the default repo for storing the public key
+    `${this.baseUrl}/api/repos/${this.repo || 'oyd.settings'}/pub_key`;
+  getEncryptedPassword = (nonce: string) => `${this.support}/${nonce}`;
+
+  setRepo = (repo: string) => this.repo = repo;
 }

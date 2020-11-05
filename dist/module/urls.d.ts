@@ -3,11 +3,12 @@ export declare class VaultifierUrls {
     private baseUrl;
     private repo;
     readonly info: string;
+    readonly support: string;
     readonly token: string;
-    readonly publicKey: string;
     readonly privateKey: string;
     readonly postValue: string;
     readonly postItem: string;
+    readonly putItem: string;
     readonly getRepos: string;
     constructor(baseUrl: string, repo: string);
     getItem: (query: VaultItemQuery) => string;
@@ -17,4 +18,7 @@ export declare class VaultifierUrls {
     deleteItem: (query: VaultItemQuery) => string;
     getSchemas: () => string;
     resolveInstallCode: (code: string) => string;
+    publicKey: () => string;
+    getEncryptedPassword: (nonce: string) => string;
+    setRepo: (repo: string) => string;
 }
