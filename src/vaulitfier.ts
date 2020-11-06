@@ -133,37 +133,39 @@ export class Vaultifier {
    * @param isActive
    */
   async setEnd2EndEncryption(isActive = true): Promise<VaultEncryptionSupport> {
-    if (!isActive) {
+    // if endpoint does not support repos, there is no way to encrypt data, because of missing public key
+    if (!isActive || !this.supports?.repos) {
       this.publicKey = undefined;
       this.privateKey = undefined;
     }
+    else {
+      try {
+        this.publicKey = (await this.communicator.get(this.urls.publicKey(), true))
+          .data.public_key;
 
-    try {
-      this.publicKey = (await this.communicator.get(this.urls.publicKey(), true))
-        .data.public_key;
+        if (this.privateKeyCredentials) {
+          const { nonce, masterKey } = this.privateKeyCredentials;
 
-      if (this.privateKeyCredentials) {
-        const { nonce, masterKey } = this.privateKeyCredentials;
+          const encryptedPassword = (await this.communicator.get(this.urls.getEncryptedPassword(this.privateKeyCredentials.nonce)))
+            .data.cipher;
+          const password = await decrypt({
+            value: encryptedPassword,
+            nonce,
+          }, {
+            cipher: masterKey,
+            isHashed: true,
+          });
 
-        const encryptedPassword = (await this.communicator.get(this.urls.getEncryptedPassword(this.privateKeyCredentials.nonce)))
-          .data.cipher;
-        const password = await decrypt({
-          value: encryptedPassword,
-          nonce,
-        }, {
-          cipher: masterKey,
-          isHashed: true,
-        });
+          const encryptedPrivateKey = JSON.parse(
+            (await this.communicator.get(this.urls.privateKey, true))
+              .data.password_key
+          );
 
-        const encryptedPrivateKey = JSON.parse(
-          (await this.communicator.get(this.urls.privateKey, true))
-            .data.password_key
-        );
-
-        this.privateKey = await decrypt(encryptedPrivateKey, { cipher: password });
+          this.privateKey = await decrypt(encryptedPrivateKey, { cipher: password });
+        }
       }
+      catch { /* Yeah I know, error handling could be done better here... */ }
     }
-    catch { /* Yeah I know, error handling could be done better here... */ }
 
     return this.getEncryptionSupport();
   }
