@@ -7,7 +7,7 @@ A js-library to interact with the [OwnYourData Data-Vault](https://data-vault.eu
 ## Example
 
 ```javascript
-import { Vaultifier } from 'vaultifier/dist/module
+import { Vaultifier } from 'vaultifier/dist/module'
 
 const vaultifier = new Vaultifier(
   'https://data-vault.eu',
