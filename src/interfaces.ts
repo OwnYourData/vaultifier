@@ -66,4 +66,5 @@ export interface VaultRepo {
 
 export interface VaultSchema {
   dri: string;
+  title?: string;
 }
