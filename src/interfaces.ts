@@ -1,6 +1,7 @@
 export interface VaultCredentials {
   appKey: string;
   appSecret: string;
+  scope?: string
 }
 
 export interface PrivateKeyCredentials {
@@ -67,4 +68,10 @@ export interface VaultRepo {
 export interface VaultSchema {
   dri: string;
   title?: string;
+}
+
+export interface VaultSupport {
+  repos: boolean,
+  authentication: boolean,
+  scopes?: string[],
 }

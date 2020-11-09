@@ -2,7 +2,7 @@ import { VaultItemQuery, VaultItemsQuery } from './interfaces';
 
 // TODO: User should be able to change repo on the fly
 export class VaultifierUrls {
-  readonly info: string;
+  readonly active: string;
   readonly support: string;
   readonly token: string;
   readonly privateKey: string;
@@ -17,7 +17,7 @@ export class VaultifierUrls {
     // if (process.env.NODE_ENV === 'production' && new URL(baseUrl).protocol !== 'https:')
     //   throw Error('Protocol of baseUrl is not "https".');
 
-    this.info = `${baseUrl}/api/active`;
+    this.active = `${baseUrl}/api/active`;
     this.support = `${baseUrl}/api/support`
     this.token = `${baseUrl}/oauth/token`;
     this.postValue = `${baseUrl}/api/data`;

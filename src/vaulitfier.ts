@@ -14,14 +14,10 @@ import {
   VaultPostItem,
   VaultRepo,
   VaultSchema,
+  VaultSupport,
   VaultValue,
 } from './interfaces';
 import { VaultifierUrls } from './urls';
-
-interface VaultSupport {
-  repos: boolean,
-  authentication: boolean,
-}
 
 export class Vaultifier {
   private publicKey?: string;
@@ -62,11 +58,12 @@ export class Vaultifier {
       return this.supports;
 
     // TODO: fetch information about the container (e.g. name) -> /api/info
-    const { data } = await this.communicator.get(this.urls.info);
+    const { data } = await this.communicator.get(this.urls.active);
 
     return this.supports = {
       repos: !!data.repos,
       authentication: !!data.auth,
+      scopes: data.scopes,
     };
   }
 
@@ -438,11 +435,16 @@ export class Vaultifier {
     let token: string;
 
     try {
-      const response = await this.communicator.post(this.urls.token, false, JSON.stringify({
+      const body: any = {
         client_id: this.credentials?.appKey,
         client_secret: this.credentials?.appSecret,
         grant_type: 'client_credentials'
-      }));
+      };
+
+      if (this.credentials?.scope)
+        body.scope = this.credentials.scope;
+
+      const response = await this.communicator.post(this.urls.token, false, body);
 
       token = response.data.access_token as string;
     }
