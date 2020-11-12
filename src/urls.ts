@@ -11,15 +11,19 @@ export class VaultifierUrls {
   readonly putItem: string;
   readonly getRepos: string;
 
-  constructor(private baseUrl: string, private repo: string) {
+  constructor(
+    public baseUrl: string = 'https://data-vault.eu',
+    private repo?: string
+  ) {
     // TODO: re-enable this security barrier
     // don't allow insecure builds for production mode
     // if (process.env.NODE_ENV === 'production' && new URL(baseUrl).protocol !== 'https:')
     //   throw Error('Protocol of baseUrl is not "https".');
 
+    this.token = `${baseUrl}/oauth/token`;
+
     this.active = `${baseUrl}/api/active`;
     this.support = `${baseUrl}/api/support`
-    this.token = `${baseUrl}/oauth/token`;
     this.postValue = `${baseUrl}/api/data`;
     this.postItem = `${baseUrl}/api/data`;
     this.putItem = `${baseUrl}/api/data`;
@@ -59,6 +63,8 @@ export class VaultifierUrls {
     // oyd.settings is the default repo for storing the public key
     `${this.baseUrl}/api/repos/${this.repo || 'oyd.settings'}/pub_key`;
   getEncryptedPassword = (nonce: string) => `${this.support}/${nonce}`;
+
+  getOAuthAuthorizationCode = (clientId: string, redirectUri: string) => `${this.baseUrl}/oauth/authorize?client_id=${clientId}&redirect_uri${redirectUri}&response_type=code`
 
   setRepo = (repo: string) => this.repo = repo;
 }

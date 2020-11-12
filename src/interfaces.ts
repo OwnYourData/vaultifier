@@ -1,6 +1,7 @@
 export interface VaultCredentials {
-  appKey: string;
-  appSecret: string;
+  appKey?: string;
+  appSecret?: string;
+  authorizationCode?: string;
   scope?: string
 }
 
@@ -71,8 +72,16 @@ export interface VaultSchema {
   title?: string;
 }
 
+export enum OAuthType {
+  AUTHORIZATION_CODE = 'authorization_code',
+  CLIENT_CREDENTIALS = 'client_credentials',
+}
+
 export interface VaultSupport {
   repos: boolean,
   authentication: boolean,
   scopes?: string[],
+  oAuth?: {
+    type: OAuthType,
+  },
 }

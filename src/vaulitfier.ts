@@ -3,6 +3,7 @@ import { CryptoObject, decrypt, encrypt, isEncrypted } from './crypto';
 import { UnauthorizedError } from './errors';
 import { parseVaultItemMeta } from './helpers';
 import {
+  OAuthType,
   PrivateKeyCredentials,
   VaultCredentials,
   VaultEncryptionSupport,
@@ -20,14 +21,16 @@ import {
 import { VaultifierUrls } from './urls';
 
 export class Vaultifier {
+  private baseUrl: string;
+
   private publicKey?: string;
   private privateKey?: string;
-
-  private urls: VaultifierUrls;
 
   private communicator: Communicator;
 
   private supports?: VaultSupport;
+
+  public readonly urls: VaultifierUrls;
 
   /**
    *
@@ -36,8 +39,8 @@ export class Vaultifier {
    * @param credentials "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
    */
   constructor(
-    public baseUrl: string,
-    public repo: string,
+    baseUrl?: string,
+    public repo?: string,
     public credentials?: VaultCredentials,
     public privateKeyCredentials?: PrivateKeyCredentials,
   ) {
@@ -46,6 +49,8 @@ export class Vaultifier {
       repo
     );
 
+    // VaultifierUrls contains a default value for baseUrl, therefore we read it from there
+    this.baseUrl = this.urls.baseUrl;
     this.communicator = new Communicator();
   }
 
@@ -64,6 +69,7 @@ export class Vaultifier {
       repos: !!data.repos,
       authentication: !!data.auth,
       scopes: data.scopes,
+      oAuth: data.oauth,
     };
   }
 
@@ -407,12 +413,7 @@ export class Vaultifier {
       return false;
     }
 
-    if (false === (
-      (await this.getVaultSupport()).authentication &&
-      this.credentials?.appKey &&
-      this.credentials.appSecret)
-    )
-      return false;
+    // TODO: This should also check, if valid credentials were provided
 
     return this.communicator.isValid();
   }
@@ -440,11 +441,27 @@ export class Vaultifier {
     let token: string;
 
     try {
-      const body: any = {
-        client_id: this.credentials?.appKey,
-        client_secret: this.credentials?.appSecret,
-        grant_type: 'client_credentials'
-      };
+      const support = await this.getVaultSupport();
+      const credentials = this.credentials;
+
+      let body: any;
+
+      if (
+        support.oAuth?.type === OAuthType.AUTHORIZATION_CODE &&
+        credentials?.authorizationCode
+      )
+        body = {
+          code: this.credentials?.authorizationCode,
+          grant_type: OAuthType.AUTHORIZATION_CODE,
+        }
+      else if (credentials?.appKey && credentials?.appSecret)
+        body = {
+          client_id: this.credentials?.appKey,
+          client_secret: this.credentials?.appSecret,
+          grant_type: OAuthType.CLIENT_CREDENTIALS,
+        };
+      else
+        throw new Error('No valid credentials provided.')
 
       if (this.credentials?.scope)
         body.scope = this.credentials.scope;
