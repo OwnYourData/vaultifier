@@ -43,10 +43,11 @@ export interface VaultItemsQuery {
 
 export interface VaultPostItem {
   content: any;
-  dri: string;
   schemaDri: string;
   mimeType: string;
   repo?: string;
+  dri?: string;
+  id?: number;
 }
 
 export type VaultMeta = Omit<VaultItem, 'content' | 'isEncrypted'>;

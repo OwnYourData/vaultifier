@@ -247,18 +247,23 @@ export class Vaultifier {
     if (!item.repo)
       item.repo = this.repo;
 
-    const { content, dri, mimeType, schemaDri, repo } = item;
+    const { content, dri, id, mimeType, schemaDri, repo } = item;
 
     // POST/PUT object is slightly different to our internal structure
     const dataToPost: any = {
-      content,
       dri,
+      content,
       mime_type: mimeType,
-      schema_dri: schemaDri,
     }
 
     if (this.supports?.repos)
       dataToPost.table_name = repo;
+
+    if (id)
+      dataToPost.id = id;
+
+    if (schemaDri)
+      dataToPost.schema_dri = schemaDri;
 
     return JSON.stringify(dataToPost);
   }
