@@ -370,14 +370,12 @@ export class Vaultifier {
    * @returns {Promise<VaultRepo[]}
    */
   async getRepos(): Promise<VaultRepo[] | undefined> {
-    try {
+    if ((await this.getVaultSupport()).repos) {
       const { data } = await this.communicator.get(this.urls.getRepos, true);
       return data as VaultRepo[];
     }
-    catch {
-      /* This function is not implemented in semantic containers */
-    }
 
+    /* This function is not implemented in semantic containers */
     return;
   }
 
