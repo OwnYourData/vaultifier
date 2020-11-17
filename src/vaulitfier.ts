@@ -21,8 +21,6 @@ import {
 import { VaultifierUrls } from './urls';
 
 export class Vaultifier {
-  private baseUrl: string;
-
   private publicKey?: string;
   private privateKey?: string;
 
@@ -49,8 +47,6 @@ export class Vaultifier {
       repo
     );
 
-    // VaultifierUrls contains a default value for baseUrl, therefore we read it from there
-    this.baseUrl = this.urls.baseUrl;
     this.communicator = new Communicator();
   }
 
@@ -400,22 +396,20 @@ export class Vaultifier {
   }
 
   /**
-   * At this time, vaultifier always needs appKey and appSecret. This might change in the future.
+   * Checks, whether a valid endpoint is specified or not
    * 
    * @returns true, if Vaultifier has all minimum necessary data and was initalized correctly.
    */
   async isValid(): Promise<boolean> {
     try {
-      // test if is valid url
-      new URL(this.baseUrl);
+      // currently we check the validity, if there is an endpoint specified 
+      // that can deliver a response to the vault support api call
+      await this.getVaultSupport();
+      return true;
     }
-    catch (e) {
+    catch {
       return false;
     }
-
-    // TODO: This should also check, if valid credentials were provided
-
-    return this.communicator.isValid();
   }
 
   /**
