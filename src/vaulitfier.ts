@@ -323,21 +323,14 @@ export class Vaultifier {
   /**
    * Retrieve data from the data vault's repository without metadata
    *
-   * @param {VaultItemsQuery} [query] Query parameters to specify the records that have to be queried
+   * @param query Query parameters to specify the records that have to be queried
    *
-   * @returns {Promise<VaultMinMeta[]>} array of JSON data
+   * @returns array of JSON data
    */
-  async getValues(query?: VaultItemsQuery): Promise<VaultMinMeta[]> {
-    const { data } = await this.communicator.get(this.urls.getItems(query), true);
+  async getValues(query: VaultItemsQuery): Promise<any> {
+    const { data } = await this.communicator.get(this.urls.getValues(query), true);
 
-    // item usually contains JSON data, therefore we try to parse the string
-    return data.map((item: any) => {
-      try {
-        return JSON.parse(item) as VaultMinMeta;
-      } catch { /* */ }
-
-      return item as VaultMinMeta;
-    });
+    return Promise.all(data.map((x: any) => this.decryptOrNot(x)));
   }
 
   /**

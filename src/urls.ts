@@ -50,6 +50,11 @@ export class VaultifierUrls {
       ? `${this.baseUrl}/api/data/${query.dri}?p=dri&f=plain`
       : `${this.baseUrl}/api/data/${query.id}/p=id&f=plain`;
 
+  getValues = (query: VaultItemsQuery) =>
+    query.schemaDri
+      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=plain`
+      : `${this.baseUrl}/api/data?repo=${this.repo}&f=plain`;
+
   deleteItem = (query: VaultItemQuery) =>
     query.dri
       ? `${this.baseUrl}/api/data/${query.dri}?p=dri`
