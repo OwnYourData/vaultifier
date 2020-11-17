@@ -294,7 +294,7 @@ export class Vaultifier {
    * @param item data that is going to be passed to the data vault for updating the record
    */
   async updateItem(item: VaultPostItem): Promise<VaultMinMeta> {
-    const res = await this.communicator.put(this.urls.putItem, true, await this.getPutPostValue(item));
+    const res = await this.communicator.put(this.urls.putItem(item), true, await this.getPutPostValue(item));
 
     return res.data as VaultMinMeta;
   }

@@ -8,7 +8,6 @@ export class VaultifierUrls {
   readonly privateKey: string;
   readonly postValue: string;
   readonly postItem: string;
-  readonly putItem: string;
   readonly getRepos: string;
 
   constructor(
@@ -26,7 +25,6 @@ export class VaultifierUrls {
     this.support = `${baseUrl}/api/support`
     this.postValue = `${baseUrl}/api/data`;
     this.postItem = `${baseUrl}/api/data`;
-    this.putItem = `${baseUrl}/api/data`;
     this.privateKey = `${baseUrl}/api/users/current`;
     this.getRepos = `${baseUrl}/api/repos/index`;
   }
@@ -56,6 +54,9 @@ export class VaultifierUrls {
     query.dri
       ? `${this.baseUrl}/api/data/${query.dri}?p=dri`
       : `${this.baseUrl}/api/data/${query.id}?p=id`;
+
+  // putting an item uses the same url as deleting an item
+  putItem = (query: VaultItemQuery) => this.deleteItem(query);
 
   getSchemas = () => `${this.baseUrl}/api/meta/schemas`;
   resolveInstallCode = (code: string) => `${this.baseUrl}/api/install/${code}`;
