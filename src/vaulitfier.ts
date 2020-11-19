@@ -3,6 +3,7 @@ import { CryptoObject, decrypt, encrypt, isEncrypted } from './crypto';
 import { UnauthorizedError } from './errors';
 import { parseVaultItemMeta } from './helpers';
 import {
+  OAuthSupport,
   OAuthType,
   PrivateKeyCredentials,
   VaultCredentials,
@@ -61,11 +62,18 @@ export class Vaultifier {
     // TODO: fetch information about the container (e.g. name) -> /api/info
     const { data } = await this.communicator.get(this.urls.active);
 
+    const hasAuth = !!data.auth;
+
+    // if OAuth type is not specified by server, we assume the default, which is client_credentials
+    const oAuth: OAuthSupport = (hasAuth && !data.oAuth) ? {
+      type: OAuthType.CLIENT_CREDENTIALS
+    } : data.oAuth;
+
     return this.supports = {
       repos: !!data.repos,
       authentication: !!data.auth,
       scopes: data.scopes,
-      oAuth: data.oauth,
+      oAuth,
     };
   }
 

@@ -77,11 +77,13 @@ export enum OAuthType {
   CLIENT_CREDENTIALS = 'client_credentials',
 }
 
+export interface OAuthSupport {
+  type: OAuthType,
+}
+
 export interface VaultSupport {
   repos: boolean,
   authentication: boolean,
   scopes?: string[],
-  oAuth?: {
-    type: OAuthType,
-  },
+  oAuth?: OAuthSupport,
 }
