@@ -59,7 +59,8 @@ export abstract class VaultifierWeb {
         ...options,
       };
 
-    const baseUrl = getParam(_options.baseUrlParamName);
+    // in web environments, we just fall back to the window's location origin, if there is no parameter specified
+    const baseUrl = getParam(_options.baseUrlParamName) || window.location.origin;
 
     const appKey = getParam(_options.appKeyParamName);
     const appSecret = getParam(_options.appSecretParamName);

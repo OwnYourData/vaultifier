@@ -11,7 +11,7 @@ export class VaultifierUrls {
   readonly getRepos: string;
 
   constructor(
-    public baseUrl: string = '',
+    public baseUrl: string = 'https://data-vault.eu',
     private repo?: string
   ) {
     // TODO: re-enable this security barrier
