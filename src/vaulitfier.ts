@@ -72,6 +72,7 @@ export class Vaultifier {
     return this.supports = {
       repos: !!data.repos,
       authentication: !!data.auth,
+      name: data.name,
       scopes: data.scopes,
       oAuth,
     };

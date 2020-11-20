@@ -84,6 +84,7 @@ export interface OAuthSupport {
 export interface VaultSupport {
   repos: boolean,
   authentication: boolean,
+  name?: string,
   scopes?: string[],
   oAuth?: OAuthSupport,
 }
