@@ -44,8 +44,8 @@ export interface VaultItemsQuery {
 
 export interface VaultPostItem {
   content: any;
-  schemaDri: string;
   mimeType: string;
+  schemaDri?: string;
   repo?: string;
   dri?: string;
   id?: number;

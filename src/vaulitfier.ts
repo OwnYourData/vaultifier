@@ -1,4 +1,5 @@
 import { Communicator, NetworkAdapter } from './communicator';
+import { MimeType } from './constants';
 import { CryptoObject, decrypt, encrypt, isEncrypted } from './crypto';
 import { UnauthorizedError } from './errors';
 import { parseVaultItemMeta } from './helpers';
@@ -221,9 +222,12 @@ export class Vaultifier {
    * @returns {Promise<VaultMinMeta>}
    */
   async postValue(value: any): Promise<VaultMinMeta> {
-    const valueToPost = JSON.stringify(await this.encryptOrNot(value));
+    const postValue = await this.getPutPostValue({
+      content: value,
+      mimeType: MimeType.JSON,
+    });
 
-    const res = await this.communicator.post(this.urls.postValue, true, valueToPost);
+    const res = await this.communicator.post(this.urls.postValue, true, postValue);
 
     return res.data as VaultMinMeta;
   }
