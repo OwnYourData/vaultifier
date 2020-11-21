@@ -221,7 +221,7 @@ export class Vaultifier {
    * @returns {Promise<VaultMinMeta>}
    */
   async postValue(value: any): Promise<VaultMinMeta> {
-    const valueToPost = JSON.stringify(this.encryptOrNot(value));
+    const valueToPost = JSON.stringify(await this.encryptOrNot(value));
 
     const res = await this.communicator.post(this.urls.postValue, true, valueToPost);
 
