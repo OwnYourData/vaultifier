@@ -121,21 +121,30 @@ export class Communicator {
     );
   }
 
+  private async tryCatch(callable: () => Promise<NetworkResponse>) {
+    try {
+      const response = await callable();
+      return response;
+    } catch (e) {
+      return e.response;
+    }
+  }
+
   private async _placeNetworkCall(callable: () => Promise<NetworkResponse>, isAuthenticated = false) {
     let response: NetworkResponse;
 
     if (isAuthenticated) {
-      response = await callable();
+      response = await this.tryCatch(callable);
 
-      // if data vault responds with a 403, our token is expired
+      // if data vault responds with a 401, our token is expired
       // therefore we fetch a new one and give the call another try
       if (response.status === 401 && this._usesAuthentication()) {
         this.token = await this.refreshToken();
-        response = await callable();
+        response = await this.tryCatch(callable);
       }
     }
     else
-      response = await callable();
+      response = await this.tryCatch(callable);
 
     if (response.status >= 400) {
       // TODO: better error handling
