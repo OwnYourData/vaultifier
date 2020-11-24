@@ -340,7 +340,7 @@ export class Vaultifier {
    *
    * @returns array of JSON data
    */
-  async getValues(query: VaultItemsQuery): Promise<any> {
+  async getValues(query: VaultItemsQuery): Promise<any[]> {
     const { data } = await this.communicator.get(this.urls.getValues(query), true);
 
     return Promise.all(data.map((x: any) => this.decryptOrNot(x)));
