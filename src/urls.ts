@@ -72,5 +72,12 @@ export class VaultifierUrls {
 
   getOAuthAuthorizationCode = (clientId: string, redirectUri: string) => `${this.baseUrl}/oauth/authorize?client_id=${clientId}&redirect_uri${redirectUri}&response_type=code`
 
+  getGenericUrl = (url: string) => {
+    if (!url.startsWith('/'))
+      throw new Error('Generic urls must have a leading slash!');
+
+    return `${this.baseUrl}${url}`;
+  }
+
   setRepo = (repo: string) => this.repo = repo;
 }

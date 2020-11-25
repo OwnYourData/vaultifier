@@ -100,14 +100,14 @@ export class Communicator {
     );
   }
 
-  async post(url: string, usesAuth = false, data: string): Promise<NetworkResponse> {
+  async post(url: string, usesAuth = false, data?: any): Promise<NetworkResponse> {
     return this._placeNetworkCall(
       async () => this.networkAdapter.post(url, data, this._getHeaders(usesAuth)),
       usesAuth
     );
   }
 
-  async put(url: string, usesAuth = false, data: string): Promise<NetworkResponse> {
+  async put(url: string, usesAuth = false, data?: any): Promise<NetworkResponse> {
     return this._placeNetworkCall(
       async () => this.networkAdapter.put(url, data, this._getHeaders(usesAuth)),
       usesAuth

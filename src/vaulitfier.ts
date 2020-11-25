@@ -1,4 +1,4 @@
-import { Communicator, NetworkAdapter } from './communicator';
+import { Communicator, NetworkAdapter, NetworkResponse } from './communicator';
 import { MimeType } from './constants';
 import { CryptoObject, decrypt, encrypt, isEncrypted } from './crypto';
 import { UnauthorizedError } from './errors';
@@ -213,6 +213,30 @@ export class Vaultifier {
 
     return item;
   }
+
+  /**
+   * A generic method to post data to the Data Vault
+   * 
+   * @param url Url where to send the request to. Has to start with a leading slash "/"
+   * @param usesAuth Whether or not the call should be authorized or not
+   * @param data Data to pass to the endpoint
+   */
+  post = async (
+    url: string,
+    usesAuth?: boolean,
+    data?: any,
+  ): Promise<NetworkResponse> => this.communicator.post(this.urls.getGenericUrl(url), usesAuth, data);
+
+  /**
+   * A generic method to get data from the Data Vault
+   * 
+   * @param url Url where to send the request to. Has to start with a leading slash "/"
+   * @param usesAuth Whether or not the call should be authorized or not
+   */
+  get = async (
+    url: string,
+    usesAuth?: boolean,
+  ): Promise<NetworkResponse> => this.communicator.get(this.urls.getGenericUrl(url), usesAuth);
 
   /**
    * Posts a value into the data vault's repository, without any metadata
