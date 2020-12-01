@@ -4,8 +4,10 @@ import { CryptoObject, decrypt, encrypt, isEncrypted } from './crypto';
 import { UnauthorizedError } from './errors';
 import { parseVaultItemMeta } from './helpers';
 import {
+  MultiResponse,
   OAuthSupport,
   OAuthType,
+  Paging,
   PrivateKeyCredentials,
   VaultCredentials,
   VaultEncryptionSupport,
@@ -50,6 +52,16 @@ export class Vaultifier {
     );
 
     this.communicator = new Communicator();
+  }
+
+  private getPaging(response: NetworkResponse): Paging {
+    const currentPage = response.headers['current-page'];
+    const totalPages = response.headers['total-pages'];
+
+    return {
+      current: typeof currentPage === 'string' ? parseInt(currentPage) : currentPage,
+      total: typeof totalPages === 'string' ? parseInt(totalPages) : totalPages,
+    };
   }
 
   /**
@@ -364,10 +376,15 @@ export class Vaultifier {
    *
    * @returns array of JSON data
    */
-  async getValues(query: VaultItemsQuery): Promise<any[]> {
-    const { data } = await this.communicator.get(this.urls.getValues(query), true);
+  async getValues(query: VaultItemsQuery): Promise<MultiResponse<any>> {
+    const response = await this.communicator.get(this.urls.getValues(query), true);
 
-    return Promise.all(data.map((x: any) => this.decryptOrNot(x)));
+    const content = await Promise.all(response.data.map((x: any) => this.decryptOrNot(x)));
+
+    return {
+      content,
+      paging: this.getPaging(response),
+    };
   }
 
   /**
@@ -388,10 +405,13 @@ export class Vaultifier {
    * 
    * @param query Query parameter to specify the records that have to be deleted
    */
-  async getMetaItems(query?: VaultItemsQuery): Promise<VaultMeta[]> {
-    const { data } = await this.communicator.get(this.urls.getMetaItems(query), true);
+  async getMetaItems(query?: VaultItemsQuery): Promise<MultiResponse<VaultMeta>> {
+    const response = await this.communicator.get(this.urls.getMetaItems(query), true);
 
-    return data.map(parseVaultItemMeta);
+    return {
+      content: response.data.map(parseVaultItemMeta),
+      paging: this.getPaging(response),
+    };
   }
 
   /**

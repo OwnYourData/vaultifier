@@ -39,7 +39,8 @@ export interface VaultItemQuery {
 }
 
 export interface VaultItemsQuery {
-  schemaDri: string;
+  schemaDri?: string;
+  page?: number;
 }
 
 export interface VaultPostItem {
@@ -87,4 +88,14 @@ export interface VaultSupport {
   name?: string,
   scopes?: string[],
   oAuth?: OAuthSupport,
+}
+
+export interface MultiResponse<T> {
+  content: T[];
+  paging: Paging;
+}
+
+export interface Paging {
+  current: number;
+  total: number;
 }

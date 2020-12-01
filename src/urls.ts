@@ -29,15 +29,20 @@ export class VaultifierUrls {
     this.getRepos = `${baseUrl}/api/repos/index`;
   }
 
+  private getPagingParam = (page?: number) =>
+    page ?
+      `&page=${page}` :
+      '';
+
   getItem = (query: VaultItemQuery): string =>
     query.id
       ? `${this.baseUrl}/api/data/${query.id}?p=id&f=full`
       : `${this.baseUrl}/api/data/${query.dri}?p=dri&f=full`;
 
   getMetaItems = (query?: VaultItemsQuery): string =>
-    query
-      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=meta`
-      : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=meta`;
+    query?.schemaDri
+      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=meta${this.getPagingParam(query.page)}`
+      : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=meta${this.getPagingParam(query?.page)}`;
 
 
   getItems = (query?: VaultItemsQuery): string =>
@@ -52,8 +57,8 @@ export class VaultifierUrls {
 
   getValues = (query: VaultItemsQuery) =>
     query.schemaDri
-      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=plain`
-      : `${this.baseUrl}/api/data?repo=${this.repo}&f=plain`;
+      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=plain${this.getPagingParam(query.page)}`
+      : `${this.baseUrl}/api/data?repo=${this.repo}&f=plain${this.getPagingParam(query.page)}`;
 
   deleteItem = (query: VaultItemQuery) =>
     query.dri
