@@ -92,6 +92,17 @@ export class Vaultifier {
   }
 
   /**
+   * Retrieves the usage policy of the give data vault
+   * 
+   * @returns the usage policy (which format is (Turtle)[https://www.w3.org/TR/turtle/]) as a string
+   */
+  async getUsagePolicy(): Promise<string> {
+    const { data } = await this.communicator.get(this.urls.usagePolicy, true);
+
+    return data;
+  }
+
+  /**
    * Sets the vault's credentials
    * 
    * @param credentials Object containing credentials

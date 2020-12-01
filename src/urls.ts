@@ -9,6 +9,7 @@ export class VaultifierUrls {
   readonly postValue: string;
   readonly postItem: string;
   readonly getRepos: string;
+  readonly usagePolicy: string;
 
   constructor(
     public baseUrl: string = 'https://data-vault.eu',
@@ -27,6 +28,7 @@ export class VaultifierUrls {
     this.postItem = `${baseUrl}/api/data`;
     this.privateKey = `${baseUrl}/api/users/current`;
     this.getRepos = `${baseUrl}/api/repos/index`;
+    this.usagePolicy = `${baseUrl}/api/meta/usage`;
   }
 
   private getPagingParam = (page?: number) =>
