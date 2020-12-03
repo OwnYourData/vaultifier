@@ -171,7 +171,8 @@ export class Vaultifier {
 
   /**
    * Enables or disables end-to-end encryption
-   *
+   * TODO: this should always be enabled by default
+   * 
    * @param isActive
    */
   async setEnd2EndEncryption(isActive = true): Promise<VaultEncryptionSupport> {
@@ -388,6 +389,27 @@ export class Vaultifier {
     };
 
     return item;
+  }
+
+  /**
+   * Retrieve data from data vault including all metadata
+   * 
+   * @param query Query parameters to specify the record that has to be queried
+   */
+  async getItems(query: VaultItemsQuery): Promise<MultiResponse<VaultItem>> {
+    const response = await this.communicator.get(this.urls.getItems(query), true);
+
+    // yes, vault items are wrapped in a "data" property
+    const content = await Promise.all<VaultItem>(response.data.data.map(async (data: any) => ({
+      ...parseVaultItemMeta(data),
+      isEncrypted: isEncrypted(data.content),
+      content: await this.decryptOrNot(data.content),
+    })));
+
+    return {
+      content,
+      paging: this.getPaging(response),
+    };
   }
 
   /**
