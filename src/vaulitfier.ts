@@ -66,6 +66,14 @@ export class Vaultifier {
     };
   }
 
+  private parsePostResult(response: NetworkResponse): VaultMinMeta {
+    const { data } = response;
+
+    return {
+      id: data.responses[0].id,
+    };
+  }
+
   /**
    * Returns an object that can be checked for supported features of the provided endpoint
    */
@@ -278,7 +286,7 @@ export class Vaultifier {
 
     const res = await this.communicator.post(this.urls.postValue, true, postValue);
 
-    return res.data as VaultMinMeta;
+    return this.parsePostResult(res);
   }
 
   /**
@@ -343,7 +351,7 @@ export class Vaultifier {
   async postItem(item: VaultPostItem): Promise<VaultMinMeta> {
     const res = await this.communicator.post(this.urls.postItem, true, await this.getPutPostValue(item));
 
-    return res.data as VaultMinMeta;
+    return this.parsePostResult(res);
   }
 
   /**
