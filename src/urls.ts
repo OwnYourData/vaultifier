@@ -1,4 +1,4 @@
-import { VaultItemQuery, VaultItemsQuery } from './interfaces';
+import { PageQuery, VaultItemQuery, VaultItemsQuery } from './interfaces';
 
 // TODO: User should be able to change repo on the fly
 export class VaultifierUrls {
@@ -31,36 +31,25 @@ export class VaultifierUrls {
     this.usagePolicy = `${baseUrl}/api/meta/usage`;
   }
 
-  private getPagingParam = (page?: number) =>
-    page ?
-      `&page=${page}` :
-      '';
+  private getPagingParam = (page: PageQuery | undefined) =>
+    `${page?.page ? `&page=${page.page}` : ''}`;
 
-  getItem = (query: VaultItemQuery): string =>
-    query.id
-      ? `${this.baseUrl}/api/data/${query.id}?p=id&f=full`
-      : `${this.baseUrl}/api/data/${query.dri}?p=dri&f=full`;
-
-  getMetaItems = (query?: VaultItemsQuery): string =>
+  private getMultiple = (format: string, query?: VaultItemsQuery) =>
     query?.schemaDri
-      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=meta${this.getPagingParam(query.page)}`
-      : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=meta${this.getPagingParam(query?.page)}`;
+      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=${format}${this.getPagingParam(query?.page)}`
+      : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=${format}${this.getPagingParam(query?.page)}`;
 
+  getMetaItems = (query?: VaultItemsQuery): string => this.getMultiple('meta', query);
+  getItems = (query?: VaultItemsQuery): string => this.getMultiple('full', query);
+  getValues = (query?: VaultItemsQuery) => this.getMultiple('plain', query);
 
-  getItems = (query?: VaultItemsQuery): string =>
-    query
-      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=full`
-      : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=full`;
+  private getSingle = (format: string, query: VaultItemQuery) =>
+    query.id
+      ? `${this.baseUrl}/api/data/${query.id}?p=id&f=${format}`
+      : `${this.baseUrl}/api/data/${query.dri}?p=dri&f=${format}`;
 
-  getValue = (query: VaultItemQuery) =>
-    query.dri
-      ? `${this.baseUrl}/api/data/${query.dri}?p=dri&f=plain`
-      : `${this.baseUrl}/api/data/${query.id}/p=id&f=plain`;
-
-  getValues = (query: VaultItemsQuery) =>
-    query.schemaDri
-      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=plain${this.getPagingParam(query.page)}`
-      : `${this.baseUrl}/api/data?repo=${this.repo}&f=plain${this.getPagingParam(query.page)}`;
+  getItem = (query: VaultItemQuery): string => this.getSingle('full', query);
+  getValue = (query: VaultItemQuery) => this.getSingle('plain', query);
 
   deleteItem = (query: VaultItemQuery) =>
     query.dri

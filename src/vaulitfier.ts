@@ -57,10 +57,12 @@ export class Vaultifier {
   private getPaging(response: NetworkResponse): Paging {
     const currentPage = response.headers['current-page'];
     const totalPages = response.headers['total-pages'];
+    const totalItems = response.headers['total-count'];
 
     return {
       current: typeof currentPage === 'string' ? parseInt(currentPage) : currentPage,
-      total: typeof totalPages === 'string' ? parseInt(totalPages) : totalPages,
+      totalPages: typeof totalPages === 'string' ? parseInt(totalPages) : totalPages,
+      totalItems: typeof totalItems === 'string' ? parseInt(totalItems) : totalItems,
     };
   }
 
