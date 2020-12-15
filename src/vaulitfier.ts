@@ -58,11 +58,13 @@ export class Vaultifier {
     const currentPage = response.headers['current-page'];
     const totalPages = response.headers['total-pages'];
     const totalItems = response.headers['total-count'];
+    const pageItems = response.headers['page-items'];
 
     return {
       current: typeof currentPage === 'string' ? parseInt(currentPage) : currentPage,
       totalPages: typeof totalPages === 'string' ? parseInt(totalPages) : totalPages,
       totalItems: typeof totalItems === 'string' ? parseInt(totalItems) : totalItems,
+      pageItems: typeof pageItems === 'string' ? parseInt(pageItems) : pageItems,
     };
   }
 

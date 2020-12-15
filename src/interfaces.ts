@@ -104,4 +104,5 @@ export interface Paging {
   current: number;
   totalPages: number;
   totalItems: number;
+  pageItems: number;
 }
