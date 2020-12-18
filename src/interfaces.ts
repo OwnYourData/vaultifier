@@ -22,9 +22,10 @@ export interface VaultItem {
   createdAt: Date;
   updatedAt: Date;
   repoId: number;
-  repoName: string;
+  tableName: string;
   accessCount: number;
   isEncrypted: boolean;
+  repoName?: string;
   dri?: string;
   schemaDri?: string;
   mimeType?: string;
