@@ -21,11 +21,9 @@ export interface VaultItem {
   content: any;
   createdAt: Date;
   updatedAt: Date;
-  repoId: number;
   tableName: string;
-  accessCount: number;
   isEncrypted: boolean;
-  repoName?: string;
+  accessCount?: number;
   dri?: string;
   schemaDri?: string;
   mimeType?: string;

@@ -5,8 +5,6 @@ export const parseVaultItemMeta = (data: any): VaultMeta => ({
   accessCount: data.access_count,
   createdAt: new Date(data.created_at),
   updatedAt: new Date(data.updated_at),
-  repoId: data.repo_id,
-  repoName: data.repo_name,
   tableName: data.table_name,
   dri: data.dri,
   schemaDri: data.schema_dri,
