@@ -99,7 +99,7 @@ export abstract class VaultifierWeb {
           });
         }
         else if (_options.clientId) {
-          window.location.href = vaultifier.urls.getOAuthAuthorizationCode(_options.clientId, window.location.href);
+          window.location.href = vaultifier.urls.getOAuthAuthorizationCode(_options.clientId, window.encodeURIComponent(window.location.href));
         }
       }
     }

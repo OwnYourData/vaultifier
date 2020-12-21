@@ -66,7 +66,7 @@ export class VaultifierUrls {
     `${this.baseUrl}/api/repos/${this.repo || 'oyd.settings'}/pub_key`;
   getEncryptedPassword = (nonce: string) => `${this.support}/${nonce}`;
 
-  getOAuthAuthorizationCode = (clientId: string, redirectUri: string) => `${this.baseUrl}/oauth/authorize?client_id=${clientId}&redirect_uri${redirectUri}&response_type=code`
+  getOAuthAuthorizationCode = (clientId: string, redirectUri: string) => `${this.baseUrl}/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}`
 
   getGenericUrl = (url: string) => {
     if (!url.startsWith('/'))
