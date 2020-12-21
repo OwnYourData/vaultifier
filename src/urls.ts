@@ -52,9 +52,9 @@ export class VaultifierUrls {
   getValue = (query: VaultItemQuery) => this.getSingle('plain', query);
 
   deleteItem = (query: VaultItemQuery) =>
-    query.dri
-      ? `${this.baseUrl}/api/data/${query.dri}?p=dri`
-      : `${this.baseUrl}/api/data/${query.id}?p=id`;
+    query.id
+      ? `${this.baseUrl}/api/data/${query.id}?p=id`
+      : `${this.baseUrl}/api/data/${query.dri}?p=dri`;
 
   // putting an item uses the same url as deleting an item
   putItem = (query: VaultItemQuery) => this.deleteItem(query);
