@@ -518,6 +518,14 @@ export class Vaultifier {
   }
 
   /**
+   * Checks, whether the user is authenticated or not
+   * Also returns true if Vault does not support authentication
+   */
+  isAuthenticated(): boolean {
+    return this.communicator.isValid();
+  }
+
+  /**
    * Resolves an install code (usually 6 digits) and returns a set of VaultCredentials, if successful.
    * VaultCredentials are automatically set to the Vaultifier instance as well.
    *
