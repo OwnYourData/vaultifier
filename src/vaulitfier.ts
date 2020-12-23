@@ -11,6 +11,7 @@ import {
   PrivateKeyCredentials,
   VaultCredentials,
   VaultEncryptionSupport,
+  VaultInfo,
   VaultItem,
   VaultItemQuery,
   VaultItemsQuery,
@@ -31,6 +32,7 @@ export class Vaultifier {
   private communicator: Communicator;
 
   private supports?: VaultSupport;
+  private info?: VaultInfo;
 
   public readonly urls: VaultifierUrls;
 
@@ -84,7 +86,6 @@ export class Vaultifier {
     if (this.supports)
       return this.supports;
 
-    // TODO: fetch information about the container (e.g. name) -> /api/info
     const { data } = await this.communicator.get(this.urls.active);
 
     const hasAuth = !!data.auth;
@@ -100,6 +101,18 @@ export class Vaultifier {
       scopes: data.scopes,
       oAuth,
     };
+  }
+
+  /**
+   * Returns an object with data that describes the Vault
+   */
+  async getVaultInfo(): Promise<VaultInfo> {
+    if (this.info)
+      return this.info;
+
+    const { data } = await this.communicator.get(this.urls.info, true);
+
+    return this.info = data;
   }
 
   /**

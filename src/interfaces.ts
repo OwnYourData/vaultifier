@@ -93,6 +93,11 @@ export interface VaultSupport {
   oAuth?: OAuthSupport,
 }
 
+export interface VaultInfo {
+  name?: string;
+  description?: string;
+}
+
 export interface MultiResponse<T> {
   content: T[];
   paging: Paging;
