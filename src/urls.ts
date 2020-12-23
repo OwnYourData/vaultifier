@@ -9,6 +9,7 @@ export class VaultifierUrls {
   readonly postValue: string;
   readonly postItem: string;
   readonly getRepos: string;
+  readonly getTables: string;
   readonly usagePolicy: string;
   readonly info: string;
 
@@ -29,6 +30,7 @@ export class VaultifierUrls {
     this.postItem = `${baseUrl}/api/data`;
     this.privateKey = `${baseUrl}/api/users/current`;
     this.getRepos = `${baseUrl}/api/repos/index`;
+    this.getTables = `${baseUrl}/api/meta/tables`;
     this.usagePolicy = `${baseUrl}/api/meta/usage`;
     this.info = `${baseUrl}/api/meta/info`;
   }
@@ -38,8 +40,10 @@ export class VaultifierUrls {
 
   private getMultiple = (format: string, query?: VaultItemsQuery) =>
     query?.schemaDri
-      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=${format}${this.getPagingParam(query?.page)}`
-      : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=${format}${this.getPagingParam(query?.page)}`;
+      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=${format}${this.getPagingParam(query?.page)}` :
+      query?.tableId
+        ? `${this.baseUrl}/api/data?table=${query.tableId}&f=${format}${this.getPagingParam(query?.page)}`
+        : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=${format}${this.getPagingParam(query?.page)}`;
 
   getMetaItems = (query?: VaultItemsQuery): string => this.getMultiple('meta', query);
   getItems = (query?: VaultItemsQuery): string => this.getMultiple('full', query);

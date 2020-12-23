@@ -21,6 +21,7 @@ import {
   VaultRepo,
   VaultSchema,
   VaultSupport,
+  VaultTable,
   VaultValue,
 } from './interfaces';
 import { VaultifierUrls } from './urls';
@@ -473,8 +474,6 @@ export class Vaultifier {
 
   /**
    * Gets all repositories for the current plugin credentials
-   * 
-   * @returns {Promise<VaultRepo[]}
    */
   async getRepos(): Promise<VaultRepo[] | undefined> {
     if ((await this.getVaultSupport()).repos) {
@@ -487,9 +486,18 @@ export class Vaultifier {
   }
 
   /**
+   * Gets all tables that are avaialable within the user's vault
+   */
+  async getTables(): Promise<VaultTable[]> {
+    const { data } = await this.communicator.get(this.urls.getTables, true);
+
+    return (data as Array<string>).map<VaultTable>(x => ({
+      id: x,
+    }));
+  }
+
+  /**
    * Queries all OCA schemas that are available within the user's vault
-   * 
-   * @returns {Promise<VaultSchema[]}
    */
   async getSchemas(): Promise<VaultSchema[]> {
     const { data } = await this.communicator.get(this.urls.getSchemas(), true);

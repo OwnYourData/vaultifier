@@ -43,6 +43,7 @@ export interface PageQuery {
 }
 
 export interface VaultItemsQuery {
+  tableId?: string;
   schemaDri?: string;
   page?: PageQuery;
 }
@@ -70,6 +71,10 @@ export interface VaultValue {
 export interface VaultRepo {
   id: number,
   name: string,
+}
+
+export interface VaultTable {
+  id: string,
 }
 
 export interface VaultSchema {
