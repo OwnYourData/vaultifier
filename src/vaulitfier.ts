@@ -18,6 +18,7 @@ import {
   VaultMeta,
   VaultMinMeta,
   VaultPostItem,
+  VaultRelation,
   VaultRepo,
   VaultSchema,
   VaultSupport,
@@ -506,6 +507,21 @@ export class Vaultifier {
       dri: x,
       title: undefined,
     })) as VaultSchema[];
+  }
+
+  /**
+   * Gets relations to an existing data item
+   * 
+   * @param id VaultItem's where to start looking for relations
+   */
+  async getRelations(id: number): Promise<VaultRelation[]> {
+    const { data } = await this.communicator.get(this.urls.getRelations(id), true);
+
+    return data.map((x: any): VaultRelation => ({
+      id: x.id,
+      upstream: x.upstream ?? [],
+      downstream: x.downstream ?? [],
+    }));
   }
 
   /**

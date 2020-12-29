@@ -82,6 +82,12 @@ export interface VaultSchema {
   title?: string;
 }
 
+export interface VaultRelation {
+  id: number,
+  upstream: number[],
+  downstream: number[],
+}
+
 export enum OAuthType {
   AUTHORIZATION_CODE = 'authorization_code',
   CLIENT_CREDENTIALS = 'client_credentials',

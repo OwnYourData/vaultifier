@@ -66,6 +66,7 @@ export class VaultifierUrls {
   putItem = (query: VaultItemQuery) => this.deleteItem(query);
 
   getSchemas = () => `${this.baseUrl}/api/meta/schemas`;
+  getRelations = (id: number) => `${this.baseUrl}/api/relation?id=${id}`;
   resolveInstallCode = (code: string) => `${this.baseUrl}/api/install/${code}`;
   publicKey = () =>
     // oyd.settings is the default repo for storing the public key
