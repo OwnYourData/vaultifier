@@ -1,5 +1,5 @@
 import { Vaultifier } from "..";
-import { OAuthType, PrivateKeyCredentials, VaultCredentials } from "../interfaces";
+import { isTest } from "../environment";
 import { PrivateKeyCredentials, VaultCredentials } from "../interfaces";
 
 const params = new URL(window.location.href).searchParams;
@@ -127,6 +127,9 @@ export abstract class VaultifierWeb {
         }
       }
     }
+
+    if (!isTest)
+      window.history.pushState(undefined, document.title, window.location.pathname);
 
     return vaultifier;
   }
