@@ -1,5 +1,6 @@
 import { Vaultifier } from "..";
 import { OAuthType, PrivateKeyCredentials, VaultCredentials } from "../interfaces";
+import { PrivateKeyCredentials, VaultCredentials } from "../interfaces";
 
 const params = new URL(window.location.href).searchParams;
 const getParam = (name: string): string | undefined => params.get(name) || undefined;
@@ -32,7 +33,19 @@ export interface VaultifierWebOptions {
   /**
    * Name of query parameter used to retrieve the nonce for decrypting data
    */
-  nonceParamName: string
+  nonceParamName: string,
+  /**
+   * Name of query parameter used to retrieve the oAuth client id
+   */
+  clientIdParamName: string,
+  /**
+   * Name of query parameter used to retrieve the oAuth client secret
+   */
+  clientSecretParamName: string,
+  /**
+   * Name of query parameter used to retrieve the oAuth authorization code
+   */
+  authorizationCodeParamName: string,
 }
 
 const defaultOptions: VaultifierWebOptions = {
@@ -43,6 +56,9 @@ const defaultOptions: VaultifierWebOptions = {
   appSecretParamName: 'APP_SECRET',
   masterKeyParamName: 'MASTER_KEY',
   nonceParamName: 'NONCE',
+  clientIdParamName: 'client_id',
+  clientSecretParamName: 'client_secret',
+  authorizationCodeParamName: 'code',
 };
 
 export abstract class VaultifierWeb {
@@ -50,7 +66,7 @@ export abstract class VaultifierWeb {
   /**
    * Creates a Vaultifier object by retrieving connection data from URL query parameters
    */
-  static async create(options?: Partial<VaultifierWebOptions>): Promise<Vaultifier> {
+  static async create(options?: Partial<VaultifierWebOptions>): Promise<Vaultifier | undefined> {
     let _options: VaultifierWebOptions = defaultOptions;
 
     if (_options)
@@ -88,18 +104,26 @@ export abstract class VaultifierWeb {
     // if no credentials are provided as url parameters
     // we try to login via OAuth, if supported
     if (!credentials) {
-      const support = await vaultifier.getVaultSupport();
+      const authCode = getParam(_options.authorizationCodeParamName);
 
-      if (support.oAuth?.type === OAuthType.AUTHORIZATION_CODE) {
-        const code = getParam('code');
+      if (authCode) {
+        const code = getParam(_options.authorizationCodeParamName);
 
         if (code) {
-          vaultifier.setCredentials({
-            authorizationCode: code,
-          });
+          const clientId = getParam(_options.clientIdParamName);
+          const clientSecret = getParam(_options.clientSecretParamName);
+
+          if (clientId && clientSecret) {
+            vaultifier.setCredentials({
+              appKey: clientId,
+              appSecret: clientSecret,
+            });
+          }
         }
         else if (_options.clientId) {
           window.location.href = vaultifier.urls.getOAuthAuthorizationCode(_options.clientId, window.encodeURIComponent(window.location.href));
+          // we just wait forever as the browser is now changing the visible page ;-)
+          await new Promise(() => undefined);
         }
       }
     }
