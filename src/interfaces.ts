@@ -5,6 +5,11 @@ export interface VaultCredentials {
   scope?: string
 }
 
+export interface VaultE2EKeys {
+  publicKey?: string;
+  privateKey?: string;
+}
+
 export interface PrivateKeyCredentials {
   masterKey: string,
   nonce: string,

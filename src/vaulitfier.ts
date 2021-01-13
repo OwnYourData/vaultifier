@@ -10,6 +10,7 @@ import {
   Paging,
   PrivateKeyCredentials,
   VaultCredentials,
+  VaultE2EKeys,
   VaultEncryptionSupport,
   VaultInfo,
   VaultItem,
@@ -25,6 +26,7 @@ import {
   VaultTable,
   VaultValue,
 } from './interfaces';
+import { Storage } from './storage';
 import { VaultifierUrls } from './urls';
 
 export class Vaultifier {
@@ -192,6 +194,8 @@ export class Vaultifier {
    * @param isActive
    */
   async setEnd2EndEncryption(isActive = true): Promise<VaultEncryptionSupport> {
+    const e2eKeysKey = 'e2e-keys';
+
     // if endpoint does not support repos, there is no way to encrypt data, because of missing public key
     if (!isActive || !this.supports?.repos) {
       this.publicKey = undefined;
@@ -222,6 +226,25 @@ export class Vaultifier {
 
           this.privateKey = await decrypt(encryptedPrivateKey, { cipher: password });
         }
+
+        // basically, this "if" is not really necessary
+        // it just assures we do not read from the storage unnecessarily
+        // probably this does not make any difference in performance, but I consider it as good practice :-)
+        if (!this.publicKey || !this.privateKey) {
+          const storedKeys = Storage.getObject<VaultE2EKeys>(e2eKeysKey);
+
+          if (storedKeys) {
+            if (!this.publicKey)
+              this.publicKey = storedKeys.publicKey;
+            if (!this.privateKey)
+              this.privateKey = storedKeys.privateKey;
+          }
+        }
+
+        Storage.set(e2eKeysKey, {
+          privateKey: this.privateKey,
+          publicKey: this.publicKey,
+        } as VaultE2EKeys);
       }
       catch { /* Yeah I know, error handling could be done better here... */ }
     }
@@ -551,6 +574,7 @@ export class Vaultifier {
   }
 
   private async _authorize(): Promise<string> {
+    const vaultCredentialsStorageKey = 'vault-credentials';
     let token: string;
 
     try {
@@ -558,6 +582,7 @@ export class Vaultifier {
       const credentials = this.credentials;
 
       let body: any;
+      let connectCredentials: VaultCredentials | undefined = undefined;
 
       if (
         support.oAuth?.type === OAuthType.AUTHORIZATION_CODE &&
@@ -567,14 +592,25 @@ export class Vaultifier {
           code: this.credentials?.authorizationCode,
           grant_type: OAuthType.AUTHORIZATION_CODE,
         }
-      else if (credentials?.appKey && credentials?.appSecret)
+      else {
+
+        if (credentials?.appKey && credentials?.appSecret)
+          connectCredentials = credentials;
+        else {
+          const storedCredentials = Storage.getObject<VaultCredentials>(vaultCredentialsStorageKey);
+
+          if (storedCredentials)
+            connectCredentials = storedCredentials;
+          else
+            throw new Error('No valid credentials provided.');
+        }
+
         body = {
-          client_id: this.credentials?.appKey,
-          client_secret: this.credentials?.appSecret,
+          client_id: connectCredentials.appKey,
+          client_secret: connectCredentials.appSecret,
           grant_type: OAuthType.CLIENT_CREDENTIALS,
         };
-      else
-        throw new Error('No valid credentials provided.')
+      }
 
       if (this.credentials?.scope)
         body.scope = this.credentials.scope;
@@ -582,6 +618,10 @@ export class Vaultifier {
       const response = await this.communicator.post(this.urls.token, false, body);
 
       token = response.data.access_token as string;
+
+      if (connectCredentials) {
+        Storage.set(vaultCredentialsStorageKey, connectCredentials);
+      }
     }
     catch {
       throw new UnauthorizedError();
