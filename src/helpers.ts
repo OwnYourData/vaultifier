@@ -13,6 +13,7 @@ export const parseVaultItemMeta = (data: any): VaultMeta => ({
   merkleId: data.merkle_id,
   oydHash: data.oyd_hash,
   oydSourcePileId: data.oyd_source_pile_id,
+  raw: data,
 });
 
 export const decryptOrNot = async (item: any, privateKey?: string): Promise<any> => {

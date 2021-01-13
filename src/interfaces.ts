@@ -30,6 +30,9 @@ export interface VaultItem {
   merkleId?: string;
   oydHash?: string;
   oydSourcePileId?: string;
+  // Raw presentation of a vault item
+  // *IMPORTANT*: Content is already decrypted (if applicable)!
+  raw: string;
 }
 
 export interface VaultItemQuery {
