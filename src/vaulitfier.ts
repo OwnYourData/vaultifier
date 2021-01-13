@@ -537,6 +537,19 @@ export class Vaultifier {
     return this.credentials;
   }
 
+  /**
+   * Creates an eidas token that can be used as a callback parameter for the eids response POST url
+   * 
+   * @param id Vault item's id
+   */
+  async getEidasToken(id: number): Promise<string> {
+    const { data } = await this.communicator.post(this.urls.eidasToken, true, {
+      id,
+    });
+
+    return data.token;
+  }
+
   private async _authorize(): Promise<string> {
     let token: string;
 

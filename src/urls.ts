@@ -12,6 +12,7 @@ export class VaultifierUrls {
   readonly getTables: string;
   readonly usagePolicy: string;
   readonly info: string;
+  readonly eidasToken: string;
 
   constructor(
     public baseUrl: string = 'https://data-vault.eu',
@@ -33,6 +34,7 @@ export class VaultifierUrls {
     this.getTables = `${baseUrl}/api/meta/tables`;
     this.usagePolicy = `${baseUrl}/api/meta/usage`;
     this.info = `${baseUrl}/api/meta/info`;
+    this.eidasToken = `${this.baseUrl}/api/eidas/token`;
   }
 
   private getPagingParam = (page: PageQuery | undefined) =>
@@ -81,6 +83,8 @@ export class VaultifierUrls {
 
     return `${this.baseUrl}${url}`;
   }
+
+  getEidasExternalUrl = (id: number, token: string) => `${this.baseUrl}/api/eidas?ID=${id}&token=${token}`;
 
   setRepo = (repo: string) => this.repo = repo;
 }
