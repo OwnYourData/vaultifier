@@ -84,7 +84,7 @@ export class VaultifierUrls {
     return `${this.baseUrl}${url}`;
   }
 
-  getEidasExternalUrl = (id: number, token: string) => `${this.baseUrl}/api/eidas?ID=${id}&token=${token}`;
+  getEidasExternalUrl = (id: number, token: string, redirectUrl: string) => `${this.baseUrl}/api/eidas?ID=${id}&token=${token}&redirect_url=${redirectUrl}`;
 
   setRepo = (repo: string) => this.repo = repo;
 }
