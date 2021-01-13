@@ -1,8 +1,8 @@
 import { Communicator, NetworkAdapter, NetworkResponse } from './communicator';
 import { MimeType } from './constants';
-import { CryptoObject, decrypt, encrypt, isEncrypted } from './crypto';
+import { CryptoObject, decrypt, encrypt } from './crypto';
 import { UnauthorizedError } from './errors';
-import { parseVaultItemMeta } from './helpers';
+import { decryptOrNot, parseVaultItem, parseVaultItemMeta } from './helpers';
 import {
   MultiResponse,
   OAuthSupport,
@@ -248,21 +248,6 @@ export class Vaultifier {
 
     return value;
   }
-  private async decryptOrNot(item: any): Promise<any> {
-    if (
-      this._usesEncryption &&
-      this.privateKey &&
-      isEncrypted(item)
-    ) {
-      const decrypted = await decrypt(item, { cipher: this.privateKey });
-
-      try {
-        return JSON.parse(decrypted);
-      } catch { /* the encrypted data is delivered as string */ }
-    }
-
-    return item;
-  }
 
   /**
    * A generic method to post data to the Data Vault
@@ -390,21 +375,9 @@ export class Vaultifier {
    * @returns {Promise<VaultItem>}
    */
   async getItem(query: VaultItemQuery): Promise<VaultItem> {
-    const response = await this.communicator.get(this.urls.getItem(query), true);
-    let data = response.data;
+    const { data } = await this.communicator.get(this.urls.getItem(query), true);
 
-    try {
-      // item usually contains JSON data, therefore we try to parse the string
-      data = JSON.parse(data);
-    } catch { /* */ }
-
-    const item: VaultItem = {
-      ...parseVaultItemMeta(data),
-      isEncrypted: isEncrypted(data.content),
-      content: await this.decryptOrNot(data.content),
-    };
-
-    return item;
+    return parseVaultItem(data, this.privateKey);
   }
 
   /**
@@ -415,12 +388,8 @@ export class Vaultifier {
   async getItems(query: VaultItemsQuery): Promise<MultiResponse<VaultItem>> {
     const response = await this.communicator.get(this.urls.getItems(query), true);
 
-    // yes, vault items are wrapped in a "data" property
-    const content = await Promise.all<VaultItem>(response.data.data.map(async (data: any) => ({
-      ...parseVaultItemMeta(data),
-      isEncrypted: isEncrypted(data.content),
-      content: await this.decryptOrNot(data.content),
-    })));
+    // yes, vault items are wrapped in a "data" property, this is not a mistake ;-)
+    const content = await Promise.all<VaultItem>(response.data.data.map(async (data: any) => parseVaultItem(data, this.privateKey)));
 
     return {
       content,
@@ -438,7 +407,7 @@ export class Vaultifier {
   async getValues(query: VaultItemsQuery): Promise<MultiResponse<any>> {
     const response = await this.communicator.get(this.urls.getValues(query), true);
 
-    const content = await Promise.all(response.data.map((x: any) => this.decryptOrNot(x)));
+    const content = await Promise.all(response.data.map((x: any) => decryptOrNot(x, this.privateKey)));
 
     return {
       content,
