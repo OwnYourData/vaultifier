@@ -1,5 +1,4 @@
 import { Vaultifier } from "..";
-import { isTest } from "../environment";
 import { PrivateKeyCredentials, VaultCredentials } from "../interfaces";
 
 const params = new URL(window.location.href).searchParams;
@@ -107,54 +106,72 @@ export abstract class VaultifierWeb {
       nonce,
     } : undefined;
 
-    const vaultifier = new Vaultifier(
+    let vaultifier = new Vaultifier(
       baseUrl,
       repo,
       credentials,
       end2end,
     );
 
-    // if no credentials are provided as url parameters
-    // we try to login via OAuth, if supported
-    if (!credentials) {
-      const authCode = getParam(authorizationCodeParamName);
+    try {
+      await vaultifier.getVaultSupport();
+    }
+    catch {
+      // if baseUrl was specified, we try it with Vaultifier's default value
+      // therefore passing undefined
+      if (baseUrl) {
+        vaultifier = new Vaultifier(
+          undefined,
+          repo,
+          credentials,
+          end2end,
+        );
 
-      if (authCode) {
-        const code = getParam(authorizationCodeParamName);
-
-        if (code) {
-          const clientId = getParam(clientIdParamName);
-          const clientSecret = getParam(clientSecretParamName);
-
-          if (clientId && clientSecret) {
-            vaultifier.setCredentials({
-              appKey: clientId,
-              appSecret: clientSecret,
-            });
-          }
+        try {
+          await vaultifier.getVaultSupport();
         }
-        else if (clientId) {
-          window.location.href = vaultifier.urls.getOAuthAuthorizationCode(clientId, window.encodeURIComponent(window.location.href));
-          // we just wait forever as the browser is now changing the visible page ;-)
-          await new Promise(() => undefined);
+        catch {
+          return undefined;
         }
       }
     }
 
-    if (!isTest) {
-      const newUrl = new URL(window.location.href);
+    // if no credentials are provided as url parameters
+    // we try to login via OAuth, if supported
+    if (!credentials) {
+      const code = getParam(authorizationCodeParamName);
 
-      // remove sensitive information while preserving probably important url parameters
-      newUrl.searchParams.delete(appKeyParamName);
-      newUrl.searchParams.delete(appSecretParamName);
-      newUrl.searchParams.delete(masterKeyParamName);
-      newUrl.searchParams.delete(nonceParamName);
-      newUrl.searchParams.delete(clientIdParamName);
-      newUrl.searchParams.delete(clientSecretParamName);
-      newUrl.searchParams.delete(authorizationCodeParamName);
+      if (code) {
+        const appKey = getParam(clientIdParamName);
+        const appSecret = getParam(clientSecretParamName);
 
-      window.history.replaceState(undefined, document.title, newUrl.toString());
+        if (appKey && appSecret) {
+          vaultifier.setCredentials({
+            appKey,
+            appSecret,
+          });
+        }
+      }
+      else if (clientId) {
+
+        window.location.href = vaultifier.urls.getOAuthAuthorizationCode(clientId, window.encodeURIComponent(window.location.href));
+        // we just wait forever as the browser is now changing the visible page ;-)
+        await new Promise(() => undefined);
+      }
     }
+
+    const newUrl = new URL(window.location.href);
+
+    // remove sensitive information while preserving probably important url parameters
+    newUrl.searchParams.delete(appKeyParamName);
+    newUrl.searchParams.delete(appSecretParamName);
+    newUrl.searchParams.delete(masterKeyParamName);
+    newUrl.searchParams.delete(nonceParamName);
+    newUrl.searchParams.delete(clientIdParamName);
+    newUrl.searchParams.delete(clientSecretParamName);
+    newUrl.searchParams.delete(authorizationCodeParamName);
+
+    window.history.replaceState(undefined, document.title, newUrl.toString());
 
     return vaultifier;
   }
