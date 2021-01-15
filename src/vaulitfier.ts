@@ -582,7 +582,6 @@ export class Vaultifier {
       const credentials = this.credentials;
 
       let body: any;
-      let connectCredentials: VaultCredentials | undefined = undefined;
 
       if (
         support.oAuth?.type === OAuthType.AUTHORIZATION_CODE &&
@@ -595,19 +594,20 @@ export class Vaultifier {
       else {
 
         if (credentials?.appKey && credentials?.appSecret)
-          connectCredentials = credentials;
+          this.credentials = credentials;
         else {
           const storedCredentials = Storage.getObject<VaultCredentials>(vaultCredentialsStorageKey);
 
-          if (storedCredentials)
-            connectCredentials = storedCredentials;
+          if (storedCredentials) {
+            this.credentials = storedCredentials;
+          }
           else
             throw new Error('No valid credentials provided.');
         }
 
         body = {
-          client_id: connectCredentials.appKey,
-          client_secret: connectCredentials.appSecret,
+          client_id: this.credentials.appKey,
+          client_secret: this.credentials.appSecret,
           grant_type: OAuthType.CLIENT_CREDENTIALS,
         };
       }
@@ -619,8 +619,8 @@ export class Vaultifier {
 
       token = response.data.access_token as string;
 
-      if (connectCredentials) {
-        Storage.set(vaultCredentialsStorageKey, connectCredentials);
+      if (this.credentials) {
+        Storage.set(vaultCredentialsStorageKey, this.credentials);
       }
     }
     catch {
