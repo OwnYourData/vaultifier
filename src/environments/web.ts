@@ -139,22 +139,25 @@ export abstract class VaultifierWeb {
     // if no credentials are provided as url parameters
     // we try to login via OAuth, if supported
     if (!credentials) {
-      const code = getParam(authorizationCodeParamName);
+      const appKey = getParam(clientIdParamName);
+      const appSecret = getParam(clientSecretParamName);
 
-      if (code) {
-        const appKey = getParam(clientIdParamName);
-        const appSecret = getParam(clientSecretParamName);
+      // authorization code is currently not needed as data vault rather uses client
+      // but this could change in the future if authorization code flow is more prominent
+      // const code = getParam(authorizationCodeParamName);
 
-        if (appKey && appSecret) {
-          vaultifier.setCredentials({
-            appKey,
-            appSecret,
-          });
-        }
+      if (appKey && appSecret) {
+        vaultifier.setCredentials({
+          appKey,
+          appSecret,
+        });
       }
       else if (clientId) {
+        const redirectUrl = new URL(window.location.href);
+        // remove hash as this could interfere with redirection
+        redirectUrl.hash = '';
 
-        window.location.href = vaultifier.urls.getOAuthAuthorizationCode(clientId, window.encodeURIComponent(window.location.href));
+        window.location.href = vaultifier.urls.getOAuthAuthorizationCode(clientId, window.encodeURIComponent(redirectUrl.toString()));
         // we just wait forever as the browser is now changing the visible page ;-)
         await new Promise(() => undefined);
       }
