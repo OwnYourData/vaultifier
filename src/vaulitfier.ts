@@ -167,11 +167,11 @@ export class Vaultifier {
    * this function could be used to create a new instance of Vaultifier
    * But as this functionality is not yet active, it just changes the repo without doing anything further
    * 
-   * @param repoName Repository that should be used in the returned instance of Vaultifier
+   * @param repoId Repository that should be used in the returned instance of Vaultifier
    */
-  async fromRepo(repoName: string): Promise<Vaultifier> {
-    this.repo = repoName;
-    this.urls.setRepo(repoName);
+  async fromRepo(repoId: string): Promise<Vaultifier> {
+    this.repo = repoId;
+    this.urls.setRepo(repoId);
 
     return this;
   }
