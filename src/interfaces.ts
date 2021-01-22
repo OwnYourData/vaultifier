@@ -79,6 +79,7 @@ export interface VaultValue {
 export interface VaultRepo {
   id: number,
   name: string,
+  identifier: string,
 }
 
 export interface VaultTable {
