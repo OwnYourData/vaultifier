@@ -90,8 +90,8 @@ export abstract class VaultifierWeb {
     // in web environments, we just fall back to the window's location origin, if there is no parameter specified
     const baseUrl = getParam(baseUrlParamName) || window.location.origin;
 
-    const appKey = getParam(appKeyParamName);
-    const appSecret = getParam(appSecretParamName);
+    const appKey = getParam(appKeyParamName) ?? getParam(clientIdParamName);
+    const appSecret = getParam(appSecretParamName) ?? getParam(clientSecretParamName);
 
     const credentials: VaultCredentials | undefined = (appKey && appSecret) ? {
       appKey,
@@ -130,29 +130,24 @@ export abstract class VaultifierWeb {
         try {
           await vaultifier.getVaultSupport();
         }
-        catch {
+        catch (e) {
+          console.error(e);
           return undefined;
         }
       }
     }
 
-    // if no credentials are provided as url parameters
+    try {
+      // try initializing vaultifier to see if credentials are working
+      await vaultifier.initialize();
+    } catch { /* */ }
+
+
+    // if we could not authorize until this stage
     // we try to login via OAuth, if supported
-    if (!credentials) {
-      const appKey = getParam(clientIdParamName);
-      const appSecret = getParam(clientSecretParamName);
-
-      // authorization code is currently not needed as data vault rather uses client
-      // but this could change in the future if authorization code flow is more prominent
-      // const code = getParam(authorizationCodeParamName);
-
-      if (appKey && appSecret) {
-        vaultifier.setCredentials({
-          appKey,
-          appSecret,
-        });
-      }
-      else if (clientId) {
+    const isAuthenticated = await vaultifier.isAuthenticated();
+    if (!isAuthenticated) {
+      if (clientId) {
         const redirectUrl = new URL(window.location.href);
         // remove hash as this could interfere with redirection
         redirectUrl.hash = '';

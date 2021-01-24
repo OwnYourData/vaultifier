@@ -89,8 +89,8 @@ export class Communicator {
     return undefined;
   }
 
-  isValid(): boolean {
-    return (this._usesAuthentication() && !!this.token) || !this.token;
+  hasToken(): boolean {
+    return !!this.token;
   }
 
   async get(url: string, usesAuth = false): Promise<NetworkResponse> {

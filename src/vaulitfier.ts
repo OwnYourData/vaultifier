@@ -537,8 +537,13 @@ export class Vaultifier {
    * Checks, whether the user is authenticated or not
    * Also returns true if Vault does not support authentication
    */
-  isAuthenticated(): boolean {
-    return this.communicator.isValid();
+  async isAuthenticated(): Promise<boolean> {
+    const support = await this.getVaultSupport();
+
+    if (support.authentication)
+      return this.communicator.hasToken();
+    else
+      return true;
   }
 
   /**
