@@ -13,7 +13,7 @@ export interface CipherObject {
   isHashed?: boolean,
 }
 
-const createSha256Hex = async (value: string): Promise<string> => {
+export const createSha256Hex = async (value: string): Promise<string> => {
   // browser environment
   if (typeof globalThis.crypto !== 'undefined') {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -90,4 +90,19 @@ export const isEncrypted = (item: any): boolean => {
     item.nonce &&
     onlyContainsHex(item.nonce) &&
     item.version);
+}
+
+const alpha = 'abcdefghijklmnopqrstuvwxyz';
+const numeric = '1234567890';
+
+const allowedChars = `${alpha}${alpha.toUpperCase()}${numeric}`;
+
+export const getRandomString = (size: number) => {
+  const arr = [];
+
+  for (let i = 0; i < size; i++) {
+    arr.push(allowedChars.charAt(Math.floor(Math.random() * allowedChars.length)));
+  }
+
+  return arr.join('');
 }

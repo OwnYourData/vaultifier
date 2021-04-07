@@ -1,7 +1,10 @@
 export interface VaultCredentials {
   appKey?: string;
   appSecret?: string;
+
+  clientId?: string;
   authorizationCode?: string;
+
   scope?: string
 }
 

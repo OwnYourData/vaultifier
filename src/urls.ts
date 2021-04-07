@@ -75,7 +75,7 @@ export class VaultifierUrls {
     `${this.baseUrl}/api/repos/${this.repo || 'oyd.settings'}/pub_key`;
   getEncryptedPassword = (nonce: string) => `${this.support}/${nonce}`;
 
-  getOAuthAuthorizationCode = (clientId: string, redirectUri: string) => `${this.baseUrl}/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}`
+  getOAuthAuthorizationCode = (clientId: string, redirectUri: string, codeChallenge: string) => `${this.baseUrl}/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&code_challenge=${codeChallenge}`
 
   getGenericUrl = (url: string) => {
     if (!url.startsWith('/'))
@@ -85,6 +85,13 @@ export class VaultifierUrls {
   }
 
   getEidasExternalUrl = (id: number, token: string, redirectUrl: string) => `${this.baseUrl}/api/eidas?id=${id}&token=${token}&redirect_url=${redirectUrl}`;
+
+  static getRedirectUrl = () => {
+    const redirectUrl = new URL(window.location.href);
+    // remove hash as this could interfere with redirection
+    redirectUrl.hash = '';
+    return redirectUrl.toString();
+  }
 
   setRepo = (repo: string) => this.repo = repo;
 }

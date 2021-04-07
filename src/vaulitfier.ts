@@ -1,5 +1,5 @@
 import { Communicator, NetworkAdapter, NetworkResponse } from './communicator';
-import { MimeType } from './constants';
+import { MimeType, StorageKey } from './constants';
 import { CryptoObject, decrypt, encrypt } from './crypto';
 import { UnauthorizedError } from './errors';
 import { decryptOrNot, parseVaultItem, parseVaultItemMeta } from './helpers';
@@ -583,19 +583,35 @@ export class Vaultifier {
     let token: string;
 
     try {
-      const support = await this.getVaultSupport();
+      // const support = await this.getVaultSupport();
       const credentials = this.credentials;
 
       let body: any;
 
       if (
-        support.oAuth?.type === OAuthType.AUTHORIZATION_CODE &&
+        // TODO: We should also check the possibility for code authentication
+        // support.oAuth?.type === OAuthType.AUTHORIZATION_CODE &&
         credentials?.authorizationCode
-      )
+      ) {
+        // TODO: hm, this is probably not that nice...
+        // we have to rethink our authentication mechanism, it's already very complex...
+        const existingToken = this.communicator.getToken();
+
+        // TODO: at the moment there is no way how to refresh the token once it was issued
+        if (this.isAuthenticated() && existingToken)
+          return existingToken;
+
+        const pkceSecret = Storage.pop(StorageKey.PKCE_SECRET);
+        const oauthRedirectUrl = Storage.pop(StorageKey.OAUTH_REDIRECT_URL);
+
         body = {
-          code: this.credentials?.authorizationCode,
+          code: credentials.authorizationCode,
+          client_id: credentials.clientId,
+          code_verifier: pkceSecret,
           grant_type: OAuthType.AUTHORIZATION_CODE,
+          redirect_uri: oauthRedirectUrl,
         }
+      }
       else {
 
         if (credentials?.appKey && credentials?.appSecret)
@@ -624,7 +640,9 @@ export class Vaultifier {
 
       token = response.data.access_token as string;
 
-      if (this.credentials) {
+      // we only save the credentials if they are appKey and appSecret
+      // authorizationCode does not make sense to store
+      if (this.credentials?.appKey && this.credentials.appSecret) {
         Storage.set(vaultCredentialsStorageKey, this.credentials);
       }
     }

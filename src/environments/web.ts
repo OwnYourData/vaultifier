@@ -1,5 +1,9 @@
 import { Vaultifier } from "..";
+import { StorageKey } from "../constants";
+import { getRandomString } from '../crypto';
 import { PrivateKeyCredentials, VaultCredentials } from "../interfaces";
+import { Storage } from "../storage";
+import { VaultifierUrls } from "../urls";
 
 const params = new URL(window.location.href).searchParams;
 const getParam = (name: string): string | undefined => params.get(name) || undefined;
@@ -83,20 +87,34 @@ export abstract class VaultifierWeb {
       clientSecretParamName,
       masterKeyParamName,
       nonceParamName,
-      clientId,
       repo,
     } = _options
+
+    let {
+      clientId,
+    } = _options;
 
     // in web environments, we just fall back to the window's location origin, if there is no parameter specified
     const baseUrl = getParam(baseUrlParamName) || window.location.origin;
 
-    const appKey = getParam(appKeyParamName) ?? getParam(clientIdParamName);
-    const appSecret = getParam(appSecretParamName) ?? getParam(clientSecretParamName);
+    const appKey = getParam(appKeyParamName);
+    const appSecret = getParam(appSecretParamName);
 
-    const credentials: VaultCredentials | undefined = (appKey && appSecret) ? {
-      appKey,
-      appSecret,
-    } : undefined;
+    // if clientId parameter is specified as query parameter it is already the second step client id parameter of OAuth
+    clientId = getParam(clientIdParamName) ?? clientId;
+    const authorizationCode = getParam(authorizationCodeParamName);
+
+    let credentials: VaultCredentials | undefined = undefined;
+    if (appKey && appSecret)
+      credentials = {
+        appKey,
+        appSecret,
+      };
+    else if (authorizationCode && clientId)
+      credentials = {
+        authorizationCode,
+        clientId,
+      };
 
     const masterKey = getParam(masterKeyParamName);
     const nonce = getParam(nonceParamName);
@@ -148,11 +166,16 @@ export abstract class VaultifierWeb {
     const isAuthenticated = await vaultifier.isAuthenticated();
     if (!isAuthenticated) {
       if (clientId) {
-        const redirectUrl = new URL(window.location.href);
-        // remove hash as this could interfere with redirection
-        redirectUrl.hash = '';
+        // create PKCE secret
+        const pkceSecret = getRandomString(32);
+        // const hashedSecret = btoa(await createSha256Hex(pkceSecret));
+        const redirectUrl = VaultifierUrls.getRedirectUrl();
 
-        window.location.href = vaultifier.urls.getOAuthAuthorizationCode(clientId, window.encodeURIComponent(redirectUrl.toString()));
+        // we need this secret for later OAuth token retrieval
+        Storage.set(StorageKey.PKCE_SECRET, pkceSecret);
+        Storage.set(StorageKey.OAUTH_REDIRECT_URL, redirectUrl);
+
+        window.location.href = vaultifier.urls.getOAuthAuthorizationCode(clientId, window.encodeURIComponent(redirectUrl), pkceSecret);
         // we just wait forever as the browser is now changing the visible page ;-)
         await new Promise(() => undefined);
       }

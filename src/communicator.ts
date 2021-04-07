@@ -93,6 +93,10 @@ export class Communicator {
     return !!this.token;
   }
 
+  getToken(): string | undefined {
+    return this.token;
+  }
+
   async get(url: string, usesAuth = false): Promise<NetworkResponse> {
     return this._placeNetworkCall(
       async () => this.networkAdapter.get(url, this._getHeaders(usesAuth)),

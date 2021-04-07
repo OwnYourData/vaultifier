@@ -13,6 +13,12 @@ const get = (key: string): string | undefined => {
   return;
 }
 
+const pop = (key: string): string | undefined => {
+  const value = get(key);
+  remove(key);
+  return value;
+}
+
 const getObject = <T>(key: string): T | undefined => {
   const val = get(key);
   if (val)
@@ -28,9 +34,15 @@ const set = (key: string, value: any): void => {
   getStorage().setItem(key, value);
 }
 
+const remove = (key: string): void => {
+  getStorage().removeItem(key);
+}
+
 export const Storage = {
   isSupported,
   get,
   getObject,
+  pop,
   set,
+  remove,
 };
