@@ -1,7 +1,7 @@
 import { Vaultifier } from "..";
 import { StorageKey } from "../constants";
 import { getRandomString } from '../crypto';
-import { PrivateKeyCredentials, VaultCredentials } from "../interfaces";
+import { OAuthType, PrivateKeyCredentials, VaultCredentials } from "../interfaces";
 import { Storage } from "../storage";
 import { VaultifierUrls } from "../urls";
 
@@ -165,7 +165,7 @@ export abstract class VaultifierWeb {
     // we try to login via OAuth, if supported
     const isAuthenticated = await vaultifier.isAuthenticated();
     if (!isAuthenticated) {
-      if (clientId) {
+      if (clientId && (await vaultifier.getVaultSupport()).oAuth?.type === OAuthType.AUTHORIZATION_CODE) {
         // create PKCE secret
         const pkceSecret = getRandomString(32);
         // const hashedSecret = btoa(await createSha256Hex(pkceSecret));
