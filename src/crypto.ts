@@ -1,3 +1,6 @@
+import canoicalize from 'canonicalize';
+// @ts-expect-error hashlink has no types
+import { encode } from 'hashlink';
 import sodium, { from_hex, from_string, to_hex, to_string } from 'libsodium-wrappers';
 
 import { onlyContainsHex } from './utils/core-utils';
@@ -105,4 +108,19 @@ export const getRandomString = (size: number) => {
   }
 
   return arr.join('');
+}
+
+const codecs = ['mh-sha2-256', 'mb-base58-btc'];
+export const generateHashlink = async (data: any, urls: any = undefined, meta: any = undefined): Promise<string> => {
+  if (typeof data === 'object')
+    data = canoicalize(data);
+
+  const hl: string = await encode({
+    data: (new TextEncoder()).encode(data),
+    urls,
+    codecs,
+    meta
+  });
+
+  return hl.split(':')[1];
 }

@@ -1,6 +1,6 @@
 import { Communicator, NetworkAdapter, NetworkResponse } from './communicator';
 import { MimeType, StorageKey } from './constants';
-import { CryptoObject, decrypt, encrypt } from './crypto';
+import { CryptoObject, decrypt, encrypt, generateHashlink } from './crypto';
 import { UnauthorizedError } from './errors';
 import { decryptOrNot, parseVaultItem, parseVaultItemMeta } from './helpers';
 import {
@@ -339,28 +339,27 @@ export class Vaultifier {
    * @param item Data to be posted/put to the data vault
    */
   private async getPutPostValue(item: VaultPostItem): Promise<string> {
-    item.content = await this.encryptOrNot(item.content);
-
-    if (!item.repo)
-      item.repo = this.repo;
-
     const { content, dri, id, mimeType, schemaDri, repo } = item;
 
     // POST/PUT object is slightly different to our internal structure
     const dataToPost: any = {
       dri,
-      content,
+      content: await this.encryptOrNot(content),
       mime_type: mimeType,
     }
 
     if (this.supports?.repos)
-      dataToPost.table_name = repo;
+      dataToPost.table_name = repo ?? this.repo;
 
     if (id)
       dataToPost.id = id;
 
     if (schemaDri)
       dataToPost.schema_dri = schemaDri;
+
+    try {
+      dataToPost.dri = dri ?? await generateHashlink(content);
+    } catch { /* if we can not generate a dri we don't care */ }
 
     return JSON.stringify(dataToPost);
   }
