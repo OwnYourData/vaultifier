@@ -5,9 +5,6 @@ import { OAuthType, PrivateKeyCredentials, VaultCredentials } from "../interface
 import { Storage } from "../storage";
 import { VaultifierUrls } from "../urls";
 
-const params = new URL(window.location.href).searchParams;
-const getParam = (name: string): string | undefined => params.get(name) || undefined;
-
 export interface VaultifierWebOptions {
   /**
    * Repository, where to write to. This only applies to data vaults and is specified in your plugin's manifest
@@ -70,6 +67,9 @@ export abstract class VaultifierWeb {
    * Creates a Vaultifier object by retrieving connection data from URL query parameters
    */
   static async create(options?: Partial<VaultifierWebOptions>): Promise<Vaultifier | undefined> {
+    const params = new URL(window.location.href).searchParams;
+    const getParam = (name: string): string | undefined => params.get(name) || undefined;
+
     let _options: VaultifierWebOptions = defaultOptions;
 
     if (_options)
