@@ -415,7 +415,7 @@ export class Vaultifier {
    * 
    * @param query Query parameters to specify the record that has to be queried
    */
-  async getItems(query: VaultItemsQuery): Promise<MultiResponse<VaultItem>> {
+  async getItems(query?: VaultItemsQuery): Promise<MultiResponse<VaultItem>> {
     const response = await this.communicator.get(this.urls.getItems(query), true);
 
     // yes, vault items are wrapped in a "data" property, this is not a mistake ;-)
@@ -434,7 +434,7 @@ export class Vaultifier {
    *
    * @returns array of JSON data
    */
-  async getValues(query: VaultItemsQuery): Promise<MultiResponse<any>> {
+  async getValues(query?: VaultItemsQuery): Promise<MultiResponse<any>> {
     const response = await this.communicator.get(this.urls.getValues(query), true);
 
     const content = await Promise.all(response.data.map((x: any) => decryptOrNot(x, this.privateKey)));
