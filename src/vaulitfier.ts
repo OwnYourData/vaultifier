@@ -45,12 +45,15 @@ export class Vaultifier {
    * @param baseUrl The base url of your data vault (e.g. https://data-vault.eu).
    * @param repo Repository, where to write to. This is defined in your plugin's manifest
    * @param credentials "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
+   * @param privateKeyCredentials Credentials for decrypting E2E encrypted data
+   * @param allowOnlyUniqueValues Specifies, if DRI should be calculated for every value. If `true`, the data store will only allow unique values.
    */
   constructor(
     baseUrl?: string,
     public repo?: string,
     public credentials?: VaultCredentials,
     public privateKeyCredentials?: PrivateKeyCredentials,
+    public allowOnlyUniqueValues = false,
   ) {
     this.urls = new VaultifierUrls(
       baseUrl,
@@ -358,7 +361,12 @@ export class Vaultifier {
       dataToPost.schema_dri = schemaDri;
 
     try {
-      dataToPost.dri = dri ?? await generateHashlink(content);
+      if (dri)
+        dataToPost.dri = dri;
+      // we only want to create hashlinks if it is explicitly specified
+      // otherwise this might lead to values being overwritten due to the same calculated DRI
+      else if (this.allowOnlyUniqueValues)
+        dataToPost.dri = await generateHashlink(content);
     } catch { /* if we can not generate a dri we don't care */ }
 
     return JSON.stringify(dataToPost);
