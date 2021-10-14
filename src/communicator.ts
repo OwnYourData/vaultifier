@@ -20,6 +20,11 @@ export type NetworkResponse =
     'status'
   >
 
+interface NetworkResponseObject {
+  response: NetworkResponse;
+  error?: Error;
+}
+
 export interface NetworkAdapter {
   get: (
     url: string,
@@ -125,37 +130,43 @@ export class Communicator {
     );
   }
 
-  private async tryCatch(callable: () => Promise<NetworkResponse>) {
+  private async tryCatch(callable: () => Promise<NetworkResponse>): Promise<NetworkResponseObject> {
     try {
       const response = await callable();
-      return response;
-    } catch (e) {
-      return e.response;
+      return {
+        response,
+      };
+    } catch (e: any) {
+      return {
+        error: e,
+        response: e.response,
+      };
     }
   }
 
   private async _placeNetworkCall(callable: () => Promise<NetworkResponse>, isAuthenticated = false) {
-    let response: NetworkResponse;
+    let nro: NetworkResponseObject;
 
     if (isAuthenticated) {
-      response = await this.tryCatch(callable);
+      nro = await this.tryCatch(callable);
 
       // if data vault responds with a 401, our token is expired
       // therefore we fetch a new one and give the call another try
-      if (response.status === 401 && this._usesAuthentication()) {
+      if (nro.response.status === 401 && this._usesAuthentication()) {
         this.token = await this.refreshToken();
-        response = await this.tryCatch(callable);
+        nro = await this.tryCatch(callable);
       }
     }
     else
-      response = await this.tryCatch(callable);
+      nro = await this.tryCatch(callable);
 
-    if (response.status >= 400) {
-      // TODO: better error handling
+    if (nro.response.status === 401) {
       throw new UnauthorizedError();
+    } else if (nro.response.status >= 400) {
+      throw nro.error;
     }
 
-    return response;
+    return nro.response;
   }
 
   private _getHeaders(usesAuth = false): BaseHeaders {
