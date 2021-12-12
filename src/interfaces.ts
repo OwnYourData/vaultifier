@@ -1,9 +1,16 @@
+export interface i18nObject {
+  [languageCode: string]: string,
+}
+
 export interface VaultCredentials {
   appKey?: string;
   appSecret?: string;
 
   clientId?: string;
   authorizationCode?: string;
+
+  // additional property for external identity providers
+  state?: string;
 
   scope?: string
 }
@@ -109,11 +116,22 @@ export interface OAuthSupport {
   type: OAuthType,
 }
 
+export interface OAuthIdentityProvider {
+  authority: string,
+  clientId: string,
+  scope: string,
+  responseType: string,
+  redirectUrl: string,
+  title: i18nObject,
+  imageUrl: string,
+  applicationId: string,
+}
+
 export interface VaultSupport {
   repos: boolean,
   authentication: boolean,
   scopes?: string[],
-  oAuth?: OAuthSupport,
+  oAuth?: (OAuthSupport | OAuthIdentityProvider)[],
 }
 
 export interface VaultInfo {

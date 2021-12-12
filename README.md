@@ -2,7 +2,7 @@
 
 A js-library to interact with the [OwnYourData Data-Vault](https://data-vault.eu)
 
-**IMPORTANT:** This library is under development. Expect the API to change at any time, without me writing a personal letter to you in beforehand. Even without changing the version number.
+**IMPORTANT:** This library is under development. Therefore not everything will work as expected. Actually sometimes we don't even know what should be expected :-)
 
 ## Example
 

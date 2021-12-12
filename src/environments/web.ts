@@ -1,4 +1,6 @@
-import { Vaultifier } from "..";
+import { UserManager } from "oidc-client";
+
+import { OAuthIdentityProvider, OAuthSupport, Vaultifier } from "..";
 import { StorageKey } from "../constants";
 import { getRandomString } from '../crypto';
 import { OAuthType, PrivateKeyCredentials, VaultCredentials } from "../interfaces";
@@ -10,6 +12,10 @@ export interface VaultifierWebOptions {
    * Repository, where to write to. This only applies to data vaults and is specified in your plugin's manifest
    */
   repo?: string,
+  /**
+   * Base URL for vaultifier instance
+   */
+  baseUrl?: string,
   /**
    * Client id used for OAuth authentication
    */
@@ -46,6 +52,14 @@ export interface VaultifierWebOptions {
    * Name of query parameter used to retrieve the oAuth authorization code
    */
   authorizationCodeParamName: string,
+  /**
+   * Name of query parameter used to retrieve the oAuth state
+   */
+  stateParamName: string,
+}
+
+export interface InitConfig {
+  oAuthType?: OAuthSupport | OAuthIdentityProvider,
 }
 
 const defaultOptions: VaultifierWebOptions = {
@@ -59,16 +73,26 @@ const defaultOptions: VaultifierWebOptions = {
   clientIdParamName: 'client_id',
   clientSecretParamName: 'client_secret',
   authorizationCodeParamName: 'code',
+  stateParamName: 'state',
 };
 
-export abstract class VaultifierWeb {
+export class VaultifierWeb {
+  private static _getParamAccessor = () => {
+    const params = new URL(window.location.href).searchParams;
+
+    return (name: string): string | undefined => params.get(name) || undefined;
+  }
+
+  constructor(
+    public readonly options: VaultifierWebOptions,
+    public readonly vaultifier?: Vaultifier,
+  ) { }
 
   /**
    * Creates a Vaultifier object by retrieving connection data from URL query parameters
    */
-  static async create(options?: Partial<VaultifierWebOptions>): Promise<Vaultifier | undefined> {
-    const params = new URL(window.location.href).searchParams;
-    const getParam = (name: string): string | undefined => params.get(name) || undefined;
+  static async create(options?: Partial<VaultifierWebOptions>): Promise<VaultifierWeb> {
+    const getParam = VaultifierWeb._getParamAccessor();
 
     let _options: VaultifierWebOptions = defaultOptions;
 
@@ -79,23 +103,80 @@ export abstract class VaultifierWeb {
       };
 
     const {
-      appKeyParamName,
-      appSecretParamName,
-      authorizationCodeParamName,
       baseUrlParamName,
-      clientIdParamName,
-      clientSecretParamName,
-      masterKeyParamName,
-      nonceParamName,
       repo,
     } = _options
 
     let {
-      clientId,
+      baseUrl
     } = _options;
 
     // in web environments, we just fall back to the window's location origin, if there is no parameter specified
-    const baseUrl = getParam(baseUrlParamName) || window.location.origin;
+    baseUrl = baseUrl || getParam(baseUrlParamName) || window.location.origin;
+
+    let vaultifier: Vaultifier | undefined = new Vaultifier(
+      baseUrl,
+      repo,
+    );
+
+    try {
+      await vaultifier.getVaultSupport();
+    }
+    catch {
+      // if baseUrl was specified, we try it with Vaultifier's default value
+      // therefore passing undefined
+      if (baseUrl) {
+        vaultifier = new Vaultifier(
+          undefined,
+          repo,
+        );
+
+        try {
+          await vaultifier.getVaultSupport();
+        }
+        catch (e) {
+          console.error(e);
+          vaultifier = undefined;
+        }
+      }
+    }
+
+    return new VaultifierWeb(
+      _options,
+      vaultifier,
+    );
+  }
+
+  initialize = async (config: InitConfig = {}): Promise<Vaultifier | undefined> => {
+    const vaultifier = this.vaultifier;
+
+    if (!vaultifier)
+      return undefined;
+
+    // vaultifier must be valid in order to proceed with initialization
+    if (!vaultifier.isValid())
+      return undefined;
+
+    const {
+      oAuthType,
+    } = config;
+
+    const {
+      appKeyParamName,
+      appSecretParamName,
+      authorizationCodeParamName,
+      stateParamName,
+      clientIdParamName,
+      clientSecretParamName,
+      masterKeyParamName,
+      nonceParamName,
+    } = this.options;
+
+    let {
+      clientId,
+    } = this.options;
+
+    const getParam = VaultifierWeb._getParamAccessor();
 
     const appKey = getParam(appKeyParamName);
     const appSecret = getParam(appSecretParamName);
@@ -114,6 +195,7 @@ export abstract class VaultifierWeb {
       credentials = {
         authorizationCode,
         clientId,
+        state: getParam(stateParamName),
       };
 
     const masterKey = getParam(masterKeyParamName);
@@ -124,36 +206,8 @@ export abstract class VaultifierWeb {
       nonce,
     } : undefined;
 
-    let vaultifier = new Vaultifier(
-      baseUrl,
-      repo,
-      credentials,
-      end2end,
-    );
-
-    try {
-      await vaultifier.getVaultSupport();
-    }
-    catch {
-      // if baseUrl was specified, we try it with Vaultifier's default value
-      // therefore passing undefined
-      if (baseUrl) {
-        vaultifier = new Vaultifier(
-          undefined,
-          repo,
-          credentials,
-          end2end,
-        );
-
-        try {
-          await vaultifier.getVaultSupport();
-        }
-        catch (e) {
-          console.error(e);
-          return undefined;
-        }
-      }
-    }
+    vaultifier.credentials = credentials;
+    vaultifier.privateKeyCredentials = end2end;
 
     try {
       // try initializing vaultifier to see if credentials are working
@@ -165,7 +219,9 @@ export abstract class VaultifierWeb {
     // we try to login via OAuth, if supported
     const isAuthenticated = await vaultifier.isAuthenticated();
     if (!isAuthenticated) {
-      if (clientId && (await vaultifier.getVaultSupport()).oAuth?.type === OAuthType.AUTHORIZATION_CODE) {
+      const oAuthSupport = oAuthType as OAuthSupport;
+
+      if (clientId && oAuthSupport && oAuthSupport.type === OAuthType.AUTHORIZATION_CODE) {
         // create PKCE secret
         const pkceSecret = getRandomString(32);
         // const hashedSecret = btoa(await createSha256Hex(pkceSecret));
@@ -176,6 +232,26 @@ export abstract class VaultifierWeb {
         Storage.set(StorageKey.OAUTH_REDIRECT_URL, redirectUrl);
 
         window.location.href = vaultifier.urls.getOAuthAuthorizationCode(clientId, window.encodeURIComponent(redirectUrl), pkceSecret);
+        // we just wait forever as the browser is now changing the visible page ;-)
+        await new Promise(() => undefined);
+      }
+
+      const idprov = oAuthType as OAuthIdentityProvider;
+      if (idprov.authority) {
+        const redirectUrl = VaultifierUrls.getRedirectUrl();
+
+        Storage.set(StorageKey.APPLICATION_ID, idprov.applicationId);
+        Storage.set(StorageKey.OAUTH_REDIRECT_URL, redirectUrl);
+
+        const um = new UserManager({
+          authority: idprov.authority,
+          client_id: idprov.clientId,
+          scope: idprov.scope,
+          response_type: idprov.responseType,
+          redirect_uri: redirectUrl,
+        });
+
+        um.signinRedirect();
         // we just wait forever as the browser is now changing the visible page ;-)
         await new Promise(() => undefined);
       }
@@ -191,6 +267,7 @@ export abstract class VaultifierWeb {
     newUrl.searchParams.delete(clientIdParamName);
     newUrl.searchParams.delete(clientSecretParamName);
     newUrl.searchParams.delete(authorizationCodeParamName);
+    newUrl.searchParams.delete(stateParamName);
 
     window.history.replaceState(undefined, document.title, newUrl.toString());
 

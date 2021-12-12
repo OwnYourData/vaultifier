@@ -29,6 +29,8 @@ import {
 import { Storage } from './storage';
 import { VaultifierUrls } from './urls';
 
+import { OAuthIdentityProvider } from '.';
+
 export class Vaultifier {
   private publicKey?: string;
   private privateKey?: string;
@@ -94,13 +96,36 @@ export class Vaultifier {
       return this.supports;
 
     const { data } = await this.communicator.get(this.urls.active);
+    const oAuth: (OAuthSupport | OAuthIdentityProvider)[] = [];
 
-    const hasAuth = !!data.auth;
-
-    // if OAuth type is not specified by server, we assume the default, which is client_credentials
-    const oAuth: OAuthSupport = (hasAuth && !data.oAuth) ? {
-      type: OAuthType.CLIENT_CREDENTIALS
-    } : data.oAuth;
+    if (Array.isArray(data.oauth)) {
+      for (const provider of data.oauth) {
+        if (
+          provider.type === OAuthType.CLIENT_CREDENTIALS ||
+          provider.type === OAuthType.AUTHORIZATION_CODE
+        ) {
+          oAuth.push(provider);
+        }
+        else {
+          oAuth.push({
+            authority: provider.authority,
+            clientId: provider.client_id,
+            scope: provider.scope,
+            responseType: provider.response_type,
+            redirectUrl: provider.redirect_url,
+            title: provider.title,
+            imageUrl: provider.title.pic,
+            applicationId: provider.application_id,
+          })
+        }
+      }
+      // if OAuth type is not specified by server, we assume the default, which is client_credentials
+      // but only if auth is set to true
+    } else if (data.auth) {
+      oAuth.push({
+        type: OAuthType.CLIENT_CREDENTIALS,
+      });
+    }
 
     return this.supports = {
       repos: !!data.repos,
@@ -594,6 +619,7 @@ export class Vaultifier {
       const credentials = this.credentials;
 
       let body: any;
+      let tokenUrl: string | undefined = undefined;
 
       if (
         // TODO: We should also check the possibility for code authentication
@@ -605,18 +631,29 @@ export class Vaultifier {
         const existingToken = this.communicator.getToken();
 
         // TODO: at the moment there is no way how to refresh the token once it was issued
-        if (this.isAuthenticated() && existingToken)
+        if (await this.isAuthenticated() && existingToken)
           return existingToken;
 
         const pkceSecret = Storage.pop(StorageKey.PKCE_SECRET);
         const oauthRedirectUrl = Storage.pop(StorageKey.OAUTH_REDIRECT_URL);
+        const applicationId = Storage.pop(StorageKey.APPLICATION_ID);
 
-        body = {
-          code: credentials.authorizationCode,
-          client_id: credentials.clientId,
-          code_verifier: pkceSecret,
-          grant_type: OAuthType.AUTHORIZATION_CODE,
-          redirect_uri: oauthRedirectUrl,
+        if (pkceSecret && oauthRedirectUrl) {
+          body = {
+            code: credentials.authorizationCode,
+            client_id: credentials.clientId,
+            code_verifier: pkceSecret,
+            grant_type: OAuthType.AUTHORIZATION_CODE,
+            redirect_uri: oauthRedirectUrl,
+          }
+        }
+        else if (oauthRedirectUrl && credentials.state && applicationId) {
+          tokenUrl = this.urls.getOidcSignInUrl(
+            credentials.authorizationCode,
+            credentials.state,
+            oauthRedirectUrl,
+            applicationId,
+          );
         }
       }
       else {
@@ -643,7 +680,11 @@ export class Vaultifier {
       if (this.credentials?.scope)
         body.scope = this.credentials.scope;
 
-      const response = await this.communicator.post(this.urls.token, false, body);
+      let response: NetworkResponse;
+      if (tokenUrl)
+        response = await this.communicator.get(tokenUrl, false);
+      else
+        response = await this.communicator.post(this.urls.token, false, body);
 
       token = response.data.access_token as string;
 

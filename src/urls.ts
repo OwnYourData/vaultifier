@@ -86,6 +86,9 @@ export class VaultifierUrls {
 
   getEidasExternalUrl = (id: number, token: string, redirectUrl: string) => `${this.baseUrl}/api/eidas?id=${id}&token=${token}&redirect_url=${redirectUrl}`;
 
+  getOidcSignInUrl = (code: string, state: string, redirectUrl: string, applicationId: string) =>
+    `${this.baseUrl}/signin-oidc?code=${code}&state=${state}&redirect_url=${redirectUrl}&application_id=${applicationId}`;
+
   static getRedirectUrl = () => {
     const redirectUrl = new URL(window.location.href);
     // remove hash as this could interfere with redirection
