@@ -21,7 +21,7 @@ export type NetworkResponse =
   >
 
 interface NetworkResponseObject {
-  response: NetworkResponse;
+  response?: NetworkResponse;
   error?: Error;
 }
 
@@ -144,21 +144,28 @@ export class Communicator {
     }
   }
 
-  private async _placeNetworkCall(callable: () => Promise<NetworkResponse>, isAuthenticated = false) {
-    let nro: NetworkResponseObject;
+  private async _placeNetworkCall(
+    callable: () => Promise<NetworkResponse>,
+    isAuthenticated = false,
+    recursionCount = 0,
+  ): Promise<NetworkResponse> {
+    let nro: NetworkResponseObject = await this.tryCatch(callable);
 
-    if (isAuthenticated) {
-      nro = await this.tryCatch(callable);
+    if (!nro.response)
+      throw nro.error ? nro.error : new Error('No network response');
 
+    // only try to refresh authentication, if recursion count is still 0
+    // otherwise we'll end up in an infinite loop
+    if (isAuthenticated && recursionCount === 0) {
       // if data vault responds with a 401, our token is expired
       // therefore we fetch a new one and give the call another try
       if (nro.response.status === 401 && this._usesAuthentication()) {
         this.token = await this.refreshToken();
         nro = await this.tryCatch(callable);
+
+        return this._placeNetworkCall(callable, isAuthenticated, recursionCount + 1);
       }
     }
-    else
-      nro = await this.tryCatch(callable);
 
     if (nro.response.status === 401) {
       throw new UnauthorizedError();
