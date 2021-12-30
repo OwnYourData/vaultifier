@@ -38,7 +38,7 @@ export class VaultifierUrls {
   }
 
   private getPagingParam = (page: PageQuery | undefined) =>
-    `${page?.page ? `&page=${page.page}` : ''}`;
+    `${page?.page ? `&page=${page.page}` : ''}${page?.size ? `&page_size=${page.size}` : ''}`;
 
   private getMultiple = (format: string, query?: VaultItemsQuery) =>
     query?.schemaDri
