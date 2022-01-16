@@ -111,8 +111,21 @@ export class VaultifierWeb {
       baseUrl
     } = _options;
 
-    // in web environments, we just fall back to the window's location origin, if there is no parameter specified
-    baseUrl = baseUrl || getParam(baseUrlParamName) || window.location.origin;
+    if (!baseUrl) {
+      baseUrl = getParam(baseUrlParamName);
+
+      if (baseUrl) {
+        // in web environments we want to persist the base url
+        // if it was passed via URL parameter
+        // this is because if we use OAuth for login
+        // we'll lose all parameters after redirect, hence we have to persist it
+        Storage.set(StorageKey.BASE_URL, baseUrl);
+      }
+      else
+        // first of all we try to fetch a stored value (see above for saving the value)
+        // if this does not work we just fall back to the window's location origin, if there is no parameter specified
+        baseUrl = Storage.get(StorageKey.BASE_URL) || window.location.origin;
+    }
 
     let vaultifier: Vaultifier | undefined = new Vaultifier(
       baseUrl,
