@@ -93,7 +93,13 @@ export class VaultifierUrls {
     const redirectUrl = new URL(window.location.href);
     // remove hash as this could interfere with redirection
     redirectUrl.hash = '';
-    return redirectUrl.toString();
+
+    let rawUrl = redirectUrl.toString();
+    // redirect URLs also must not contain any query parameters
+    // as this is not allowed by OAuth
+    rawUrl = rawUrl.split('?')[0];
+
+    return rawUrl;
   }
 
   setRepo = (repo: string) => this.repo = repo;
