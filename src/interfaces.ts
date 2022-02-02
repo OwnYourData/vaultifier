@@ -47,7 +47,7 @@ export interface VaultItem {
   oydSourcePileId?: string;
   // Raw presentation of a vault item
   // *IMPORTANT*: Content is already decrypted (if applicable)!
-  raw: string;
+  raw: any;
 }
 
 export interface VaultItemQuery {
