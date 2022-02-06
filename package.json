@@ -1,6 +1,6 @@
 {
   "name": "vaultifier",
-  "version": "2.7.2",
+  "version": "2.8.0",
   "description": "",
   "main": "dist/module/index.js",
   "typings": "dist/module/index.d.ts",
