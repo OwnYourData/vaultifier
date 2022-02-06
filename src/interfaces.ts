@@ -79,6 +79,8 @@ export type VaultMeta = Omit<VaultItem, 'content' | 'isEncrypted'>;
 
 export interface VaultMinMeta {
   id: number;
+  // Raw presentation of vault meta
+  raw: any;
 }
 
 export interface VaultValue {

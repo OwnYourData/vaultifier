@@ -81,9 +81,14 @@ export class Vaultifier {
 
   private parsePostResult(response: NetworkResponse): VaultMinMeta {
     const { data } = response;
+    const { responses } = data;
+
+    if (!Array.isArray(responses) || responses.length === 0)
+      throw new Error('Could not parse post response.')
 
     return {
       id: data.responses[0].id,
+      raw: data,
     };
   }
 
