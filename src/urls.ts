@@ -57,7 +57,8 @@ export class VaultifierUrls {
       : `${this.baseUrl}/api/data/${query.dri}?p=dri&f=${format}`;
 
   getItem = (query: VaultItemQuery): string => this.getSingle('full', query);
-  getValue = (query: VaultItemQuery) => this.getSingle('plain', query);
+  getValue = (query: VaultItemQuery): string => this.getSingle('plain', query);
+  getProvis = (query: VaultItemQuery): string => this.getSingle('provis', query);
 
   deleteItem = (query: VaultItemQuery) =>
     query.id

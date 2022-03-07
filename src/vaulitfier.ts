@@ -441,6 +441,19 @@ export class Vaultifier {
   }
 
   /**
+   * Retreive provisioning data for a specific data record
+   * 
+   * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
+   * 
+   * @returns {Promise<string[]>}
+   */
+  async getProvis(query: VaultItemQuery): Promise<string[]> {
+    const { data } = await this.communicator.get(this.urls.getProvis(query), true);
+
+    return data;
+  }
+
+  /**
    * Retrieve data from data vault including all metadata
    * 
    * @param query Query parameters to specify the record that has to be queried
