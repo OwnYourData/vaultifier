@@ -249,8 +249,8 @@ export class VaultifierWeb {
         await new Promise(() => undefined);
       }
 
-      const idprov = oAuthType as OAuthIdentityProvider;
-      if (idprov.authority) {
+      const idprov = oAuthType as OAuthIdentityProvider | undefined;
+      if (idprov?.authority) {
         const redirectUrl = VaultifierUrls.getRedirectUrl();
 
         Storage.set(StorageKey.APPLICATION_ID, idprov.applicationId);
