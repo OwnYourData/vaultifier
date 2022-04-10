@@ -319,6 +319,19 @@ export class Vaultifier {
   ): Promise<NetworkResponse> => this.communicator.post(this.urls.getGenericUrl(url), usesAuth, data);
 
   /**
+   * A generic method to put data to the Data Vault
+   * 
+   * @param url Url where to send the request to. Has to start with a leading slash "/"
+   * @param usesAuth Whether or not the call should be authorized or not
+   * @param data Data to pass to the endpoint
+   */
+  put = async (
+    url: string,
+    usesAuth?: boolean,
+    data?: any,
+  ): Promise<NetworkResponse> => this.communicator.put(this.urls.getGenericUrl(url), usesAuth, data);
+
+  /**
    * A generic method to get data from the Data Vault
    * 
    * @param url Url where to send the request to. Has to start with a leading slash "/"
