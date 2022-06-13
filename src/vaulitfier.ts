@@ -79,7 +79,7 @@ export class Vaultifier {
     };
   }
 
-  private parsePostResult(response: NetworkResponse): VaultMinMeta {
+  public parsePostResult(response: NetworkResponse): VaultMinMeta {
     const { data } = response;
     const { responses } = data;
 
