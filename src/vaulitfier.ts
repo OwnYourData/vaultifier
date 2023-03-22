@@ -1,15 +1,15 @@
 import { Communicator, NetworkAdapter, NetworkResponse } from './communicator';
-import { MimeType, StorageKey } from './constants';
-import { CryptoObject, decrypt, encrypt, generateHashlink } from './crypto';
+import { StorageKey } from './constants';
+import { CryptoObject, decrypt, encrypt } from './crypto';
 import { UnauthorizedError } from './errors';
-import { decryptOrNot, parseVaultItem, parseVaultItemMeta } from './helpers';
+import { getPaging, parsePostResult, parseVaultItem, parseVaultItemMeta } from './helpers';
 import {
   MultiResponse,
   OAuthSupport,
   OAuthType,
-  Paging,
   PrivateKeyCredentials,
   VaultCredentials,
+  VaultData,
   VaultE2EKeys,
   VaultEncryptionSupport,
   VaultInfo,
@@ -19,12 +19,9 @@ import {
   VaultMeta,
   VaultMinMeta,
   VaultPostItem,
-  VaultRelation,
   VaultRepo,
   VaultSchema,
   VaultSupport,
-  VaultTable,
-  VaultValue,
 } from './interfaces';
 import { Storage } from './storage';
 import { VaultifierUrls } from './urls';
@@ -48,14 +45,12 @@ export class Vaultifier {
    * @param repo Repository, where to write to. This is defined in your plugin's manifest
    * @param credentials "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
    * @param privateKeyCredentials Credentials for decrypting E2E encrypted data
-   * @param allowOnlyUniqueValues Specifies, if DRI should be calculated for every value. If `true`, the data store will only allow unique values.
    */
   constructor(
     baseUrl?: string,
     public repo?: string,
     public credentials?: VaultCredentials,
     public privateKeyCredentials?: PrivateKeyCredentials,
-    public allowOnlyUniqueValues = false,
   ) {
     this.urls = new VaultifierUrls(
       baseUrl,
@@ -63,33 +58,6 @@ export class Vaultifier {
     );
 
     this.communicator = new Communicator();
-  }
-
-  private getPaging(response: NetworkResponse): Paging {
-    const currentPage = response.headers['current-page'];
-    const totalPages = response.headers['total-pages'];
-    const totalItems = response.headers['total-count'];
-    const pageItems = response.headers['page-items'];
-
-    return {
-      current: typeof currentPage === 'string' ? parseInt(currentPage) : currentPage,
-      totalPages: typeof totalPages === 'string' ? parseInt(totalPages) : totalPages,
-      totalItems: typeof totalItems === 'string' ? parseInt(totalItems) : totalItems,
-      pageItems: typeof pageItems === 'string' ? parseInt(pageItems) : pageItems,
-    };
-  }
-
-  public parsePostResult(response: NetworkResponse): VaultMinMeta {
-    const { data } = response;
-    const { responses } = data;
-
-    if (!Array.isArray(responses) || responses.length === 0)
-      throw new Error('Could not parse post response.')
-
-    return {
-      id: data.responses[0].id,
-      raw: data,
-    };
   }
 
   /**
@@ -349,15 +317,14 @@ export class Vaultifier {
    *
    * @returns {Promise<VaultMinMeta>}
    */
-  async postValue(value: any): Promise<VaultMinMeta> {
-    const postValue = await this.getPutPostValue({
-      content: value,
-      mimeType: MimeType.JSON,
+  async postData(value: any): Promise<VaultMinMeta> {
+    const postData = await this.getPutpostData({
+      data: value,
     });
 
-    const res = await this.communicator.post(this.urls.postValue, true, postValue);
+    const res = await this.communicator.post(this.urls.postData, true, postData);
 
-    return this.parsePostResult(res);
+    return parsePostResult(res);
   }
 
   /**
@@ -365,15 +332,15 @@ export class Vaultifier {
    *
    * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
    *
-   * @returns {Promise<VaultValue>} the value of the specified item
+   * @returns {Promise<VaultData>} the value of the specified item
    */
-  async getValue(query: VaultItemQuery): Promise<VaultValue> {
-    const res = await this.communicator.get(this.urls.getValue(query), true);
-    const item = res.data as VaultValue;
+  async getData(query: VaultItemQuery): Promise<VaultData> {
+    const res = await this.communicator.get(this.urls.getData(query), true);
+    const item = res.data as VaultData;
 
     try {
       // item usually contains JSON data, therefore we try to parse the string
-      item.content = JSON.parse(item.content);
+      item.data = JSON.parse(item.data);
     } catch { /* */ }
 
     return item;
@@ -384,33 +351,19 @@ export class Vaultifier {
    * 
    * @param item Data to be posted/put to the data vault
    */
-  private async getPutPostValue(item: VaultPostItem): Promise<string> {
-    const { content, dri, id, mimeType, schemaDri, repo } = item;
+  private async getPutpostData(item: VaultPostItem): Promise<string> {
+    const { data, id, meta } = item;
 
     // POST/PUT object is slightly different to our internal structure
     const dataToPost: any = {
-      dri,
-      content: await this.encryptOrNot(content),
-      mime_type: mimeType,
+      // we deliberately do not send a DRI
+      // DRI generation is only handled by server
+      meta,
+      data: await this.encryptOrNot(data),
     }
-
-    if (this.supports?.repos)
-      dataToPost.table_name = repo ?? this.repo;
 
     if (id)
       dataToPost.id = id;
-
-    if (schemaDri)
-      dataToPost.schema_dri = schemaDri;
-
-    try {
-      if (dri)
-        dataToPost.dri = dri;
-      // we only want to create hashlinks if it is explicitly specified
-      // otherwise this might lead to values being overwritten due to the same calculated DRI
-      else if (this.allowOnlyUniqueValues)
-        dataToPost.dri = await generateHashlink(content);
-    } catch { /* if we can not generate a dri we don't care */ }
 
     return JSON.stringify(dataToPost);
   }
@@ -424,9 +377,9 @@ export class Vaultifier {
    * @returns {Promise<VaultMinMeta>}
    */
   async postItem(item: VaultPostItem): Promise<VaultMinMeta> {
-    const res = await this.communicator.post(this.urls.postItem, true, await this.getPutPostValue(item));
+    const res = await this.communicator.post(this.urls.postItem, true, await this.getPutpostData(item));
 
-    return this.parsePostResult(res);
+    return parsePostResult(res);
   }
 
   /**
@@ -435,7 +388,7 @@ export class Vaultifier {
    * @param item data that is going to be passed to the data vault for updating the record
    */
   async updateItem(item: VaultPostItem): Promise<VaultMinMeta> {
-    const res = await this.communicator.put(this.urls.putItem(item), true, await this.getPutPostValue(item));
+    const res = await this.communicator.put(this.urls.putItem(item), true, await this.getPutpostData(item));
 
     return res.data as VaultMinMeta;
   }
@@ -474,30 +427,11 @@ export class Vaultifier {
   async getItems(query?: VaultItemsQuery): Promise<MultiResponse<VaultItem>> {
     const response = await this.communicator.get(this.urls.getItems(query), true);
 
-    // yes, vault items are wrapped in a "data" property, this is not a mistake ;-)
-    const content = await Promise.all<VaultItem>(response.data.data.map(async (data: any) => parseVaultItem(data, this.privateKey)));
+    const items = await Promise.all<VaultItem>(response.data.map(async (data: any) => parseVaultItem(data, this.privateKey)));
 
     return {
-      content,
-      paging: this.getPaging(response),
-    };
-  }
-
-  /**
-   * Retrieve data from the data vault's repository without metadata
-   *
-   * @param query Query parameters to specify the records that have to be queried
-   *
-   * @returns array of JSON data
-   */
-  async getValues(query?: VaultItemsQuery): Promise<MultiResponse<any>> {
-    const response = await this.communicator.get(this.urls.getValues(query), true);
-
-    const content = await Promise.all(response.data.map((x: any) => decryptOrNot(x, this.privateKey)));
-
-    return {
-      content,
-      paging: this.getPaging(response),
+      items,
+      paging: getPaging(response),
     };
   }
 
@@ -523,8 +457,8 @@ export class Vaultifier {
     const response = await this.communicator.get(this.urls.getMetaItems(query), true);
 
     return {
-      content: response.data.map(parseVaultItemMeta),
-      paging: this.getPaging(response),
+      items: response.data.map(parseVaultItemMeta),
+      paging: getPaging(response),
     };
   }
 
@@ -542,17 +476,6 @@ export class Vaultifier {
   }
 
   /**
-   * Gets all tables that are avaialable within the user's vault
-   */
-  async getTables(): Promise<VaultTable[]> {
-    const { data } = await this.communicator.get(this.urls.getTables, true);
-
-    return (data as Array<string>).map<VaultTable>(x => ({
-      id: x,
-    }));
-  }
-
-  /**
    * Queries all OCA schemas that are available within the user's vault
    */
   async getSchemas(): Promise<VaultSchema[]> {
@@ -562,21 +485,6 @@ export class Vaultifier {
       dri: x,
       title: undefined,
     })) as VaultSchema[];
-  }
-
-  /**
-   * Gets relations to an existing data item
-   * 
-   * @param id VaultItem's where to start looking for relations
-   */
-  async getRelations(id: number): Promise<VaultRelation[]> {
-    const { data } = await this.communicator.get(this.urls.getRelations(id), true);
-
-    return data.map((x: any): VaultRelation => ({
-      id: x.id,
-      upstream: x.upstream ?? [],
-      downstream: x.downstream ?? [],
-    }));
   }
 
   /**

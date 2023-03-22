@@ -6,10 +6,9 @@ export class VaultifierUrls {
   readonly support: string;
   readonly token: string;
   readonly privateKey: string;
-  readonly postValue: string;
+  readonly postData: string;
   readonly postItem: string;
   readonly getRepos: string;
-  readonly getTables: string;
   readonly usagePolicy: string;
   readonly info: string;
   readonly eidasToken: string;
@@ -27,49 +26,48 @@ export class VaultifierUrls {
 
     this.active = `${baseUrl}/api/active`;
     this.support = `${baseUrl}/api/support`
-    this.postValue = `${baseUrl}/api/data`;
+    this.postData = `${baseUrl}/api/data`;
     this.postItem = `${baseUrl}/api/data`;
     this.privateKey = `${baseUrl}/api/users/current`;
     this.getRepos = `${baseUrl}/api/repos/index`;
-    this.getTables = `${baseUrl}/api/meta/tables`;
     this.usagePolicy = `${baseUrl}/api/meta/usage`;
     this.info = `${baseUrl}/api/meta/info`;
     this.eidasToken = `${this.baseUrl}/api/eidas/token`;
   }
 
   private getPagingParam = (page: PageQuery | undefined) =>
-    `${page?.page ? `&page=${page.page}` : ''}${page?.size ? `&page_size=${page.size}` : ''}`;
+    `${page?.page ? `&page=${page.page}` : ''}${page?.size ? `&items=${page.size}` : ''}`;
 
-  private getMultiple = (format: string, query?: VaultItemsQuery) =>
-    query?.schemaDri
-      ? `${this.baseUrl}/api/data?schema_dri=${query.schemaDri}&f=${format}${this.getPagingParam(query?.page)}` :
-      query?.tableId
-        ? `${this.baseUrl}/api/data?table=${query.tableId}&f=${format}${this.getPagingParam(query?.page)}`
-        : `${this.baseUrl}/api/data?repo_id=${this.repo}&f=${format}${this.getPagingParam(query?.page)}`;
+  private getMultiple = (format: string, query?: VaultItemsQuery) => {
+    if (query?.schema)
+      return `${this.baseUrl}/api/data?schema=${query.schema}&f=${format}${this.getPagingParam(query?.page)}`;
+    else if (this.repo)
+      return `${this.baseUrl}/api/data?repo_id=${this.repo}&f=${format}${this.getPagingParam(query?.page)}`;
+    else
+      return `${this.baseUrl}/api/data?f=${format}${this.getPagingParam(query?.page)}`;
+  }
 
   getMetaItems = (query?: VaultItemsQuery): string => this.getMultiple('meta', query);
   getItems = (query?: VaultItemsQuery): string => this.getMultiple('full', query);
-  getValues = (query?: VaultItemsQuery) => this.getMultiple('plain', query);
 
   private getSingle = (format: string, query: VaultItemQuery) =>
     query.id
-      ? `${this.baseUrl}/api/data/${query.id}?p=id&f=${format}`
-      : `${this.baseUrl}/api/data/${query.dri}?p=dri&f=${format}`;
+      ? `${this.baseUrl}/api/data?id=${query.id}&f=${format}`
+      : `${this.baseUrl}/api/data?dri=${query.dri}&f=${format}`;
 
   getItem = (query: VaultItemQuery): string => this.getSingle('full', query);
-  getValue = (query: VaultItemQuery): string => this.getSingle('plain', query);
+  getData = (query: VaultItemQuery): string => this.getSingle('plain', query);
   getProvis = (query: VaultItemQuery): string => this.getSingle('provis', query);
 
   deleteItem = (query: VaultItemQuery) =>
     query.id
-      ? `${this.baseUrl}/api/data/${query.id}?p=id`
-      : `${this.baseUrl}/api/data/${query.dri}?p=dri`;
+      ? `${this.baseUrl}/api/data?id=${query.id}`
+      : `${this.baseUrl}/api/data?dri=${query.dri}`;
 
   // putting an item uses the same url as deleting an item
   putItem = (query: VaultItemQuery) => this.deleteItem(query);
 
   getSchemas = () => `${this.baseUrl}/api/meta/schemas`;
-  getRelations = (id: number) => `${this.baseUrl}/api/relation?id=${id}`;
   resolveInstallCode = (code: string) => `${this.baseUrl}/api/install/${code}`;
   publicKey = () =>
     // oyd.settings is the default repo for storing the public key

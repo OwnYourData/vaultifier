@@ -30,21 +30,23 @@ export interface VaultEncryptionSupport {
   supportsDecryption: boolean,
 }
 
+export interface VaultMetaObject {
+  schema?: string;
+}
+
+export interface VaultPostItem {
+  id?: number;
+  meta?: VaultMetaObject;
+  data: any;
+}
+
 export interface VaultItem {
-  // TODO: Do all have correct data type?
   id: number;
-  content: any;
-  createdAt: Date;
-  updatedAt: Date;
-  tableName: string;
-  isEncrypted: boolean;
-  accessCount?: number;
+  meta: VaultMetaObject;
+  data: any;
   dri?: string;
-  schemaDri?: string;
-  mimeType?: string;
-  merkleId?: string;
-  oydHash?: string;
-  oydSourcePileId?: string;
+  isEncrypted: boolean;
+
   // Raw presentation of a vault item
   // *IMPORTANT*: Content is already decrypted (if applicable)!
   raw: any;
@@ -61,21 +63,11 @@ export interface PageQuery {
 }
 
 export interface VaultItemsQuery {
-  tableId?: string;
-  schemaDri?: string;
+  schema?: string;
   page?: PageQuery;
 }
 
-export interface VaultPostItem {
-  content: any;
-  mimeType: string;
-  schemaDri?: string;
-  repo?: string;
-  dri?: string;
-  id?: number;
-}
-
-export type VaultMeta = Omit<VaultItem, 'content' | 'isEncrypted'>;
+export type VaultMeta = Omit<VaultItem, 'data' | 'isEncrypted'>;
 
 export interface VaultMinMeta {
   id: number;
@@ -83,9 +75,9 @@ export interface VaultMinMeta {
   raw: any;
 }
 
-export interface VaultValue {
+export interface VaultData {
   id: number;
-  content: any;
+  data: any;
 }
 
 export interface VaultRepo {
@@ -94,19 +86,9 @@ export interface VaultRepo {
   identifier: string,
 }
 
-export interface VaultTable {
-  id: string,
-}
-
 export interface VaultSchema {
   dri: string;
   title?: string;
-}
-
-export interface VaultRelation {
-  id: number,
-  upstream: number[],
-  downstream: number[],
 }
 
 export enum OAuthType {
@@ -142,7 +124,7 @@ export interface VaultInfo {
 }
 
 export interface MultiResponse<T> {
-  content: T[];
+  items: T[];
   paging: Paging;
 }
 

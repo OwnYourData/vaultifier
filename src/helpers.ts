@@ -1,18 +1,13 @@
+import { NetworkResponse } from './communicator';
 import { decrypt, isEncrypted } from './crypto';
-import { VaultItem, VaultMeta } from './interfaces';
+import { Paging, VaultItem, VaultMeta, VaultMinMeta } from './interfaces';
 
 export const parseVaultItemMeta = (data: any): VaultMeta => ({
   id: data.id,
-  accessCount: data.access_count,
-  createdAt: new Date(data.created_at),
-  updatedAt: new Date(data.updated_at),
-  tableName: data.table_name,
   dri: data.dri,
-  schemaDri: data.schema_dri,
-  mimeType: data.mime_type,
-  merkleId: data.merkle_id,
-  oydHash: data.oyd_hash,
-  oydSourcePileId: data.oyd_source_pile_id,
+  // we always provide a fallback value for meta
+  meta: data.meta ?? {},
+  // raw data
   raw: data,
 });
 
@@ -39,14 +34,41 @@ export const parseVaultItem = async (data: any, privateKey?: string): Promise<Va
     } catch { /* */ }
   }
 
-  const isContentEncrypted = isEncrypted(data.content);
-  data.content = await decryptOrNot(data.content, privateKey);
+  const isContentEncrypted = isEncrypted(data.data);
+  data.data = await decryptOrNot(data.data, privateKey);
 
   const item: VaultItem = {
     ...parseVaultItemMeta(data),
     isEncrypted: isContentEncrypted,
-    content: data.content,
+    data: data.data,
   };
 
   return item;
+}
+
+export const parsePostResult = (response: NetworkResponse): VaultMinMeta => {
+  const { data } = response;
+
+  return {
+    id: data.id,
+    raw: data,
+  };
+}
+
+const parsePagingHeaderValue = (value: string | number) => {
+  return typeof value === 'string' ? parseInt(value) : value;
+}
+
+export const getPaging = (response: NetworkResponse): Paging => {
+  const currentPage = response.headers['current-page'];
+  const totalPages = response.headers['total-pages'];
+  const totalItems = response.headers['total-count'];
+  const pageItems = response.headers['page-items'];
+
+  return {
+    current: parsePagingHeaderValue(currentPage),
+    totalPages: parsePagingHeaderValue(totalPages),
+    totalItems: parsePagingHeaderValue(totalItems),
+    pageItems: parsePagingHeaderValue(pageItems),
+  };
 }
