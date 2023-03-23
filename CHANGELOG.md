@@ -1,3 +1,7 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+## Unreleased
+
+## [3.0.0] - 2023-03-23
+### Changed:
+- **BREAKING:** Dropped compatibility with data-vault and semantic container. Now this library is only compatible with the new data containers api. Data Vault and Semantic Container will still be supported in versions <= 3.0.0
