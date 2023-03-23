@@ -28,6 +28,21 @@ import { VaultifierUrls } from './urls';
 
 import { OAuthIdentityProvider } from '.';
 
+/**
+ *
+ * @param credentials "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
+ * @param privateKeyCredentials Credentials for decrypting E2E encrypted data
+ * @param repo Repository, where to write to. This is defined in your plugin's manifest
+ */
+export interface VaultifierOptions {
+  credentials?: VaultCredentials;
+  privateKeyCredentials?: PrivateKeyCredentials;
+  /**
+   * @deprecated currently not implemented, might be re-enabled in a future release
+   */
+  repo?: string;
+}
+
 export class Vaultifier {
   private publicKey?: string;
   private privateKey?: string;
@@ -41,17 +56,16 @@ export class Vaultifier {
 
   /**
    *
-   * @param baseUrl The base url of your data vault (e.g. https://data-vault.eu).
-   * @param repo Repository, where to write to. This is defined in your plugin's manifest
-   * @param credentials "Identifier" (appKey) that was generated after registering the plugin. "Secret" (appSecret) that was generated after registering the plugin.
-   * @param privateKeyCredentials Credentials for decrypting E2E encrypted data
+   * @param baseUrl The base url of your data-container.
    */
   constructor(
-    baseUrl?: string,
-    public repo?: string,
-    public credentials?: VaultCredentials,
-    public privateKeyCredentials?: PrivateKeyCredentials,
+    baseUrl: string,
+    public options: VaultifierOptions = {},
   ) {
+    const {
+      repo,
+    } = options;
+
     this.urls = new VaultifierUrls(
       baseUrl,
       repo
@@ -121,7 +135,7 @@ export class Vaultifier {
   }
 
   /**
-   * Retrieves the usage policy of the give data vault
+   * Retrieves the usage policy of the give data container
    * 
    * @returns the usage policy (which format is (Turtle)[https://www.w3.org/TR/turtle/]) as a string
    */
@@ -137,7 +151,7 @@ export class Vaultifier {
    * @param credentials Object containing credentials
    */
   setCredentials(credentials: VaultCredentials): void {
-    this.credentials = credentials;
+    this.options.credentials = credentials;
   }
 
   /**
@@ -145,11 +159,14 @@ export class Vaultifier {
    * This does not indicate, whether the vault will accept the credentials or not!
    */
   hasCredentials(): boolean {
-    return !!this.credentials && !!this.credentials.appKey && !!this.credentials.appSecret;
+    const {
+      credentials,
+    } = this.options;
+    return !!credentials && !!credentials.appKey && !!credentials.appSecret;
   }
 
   /**
-   * Initializes Vaultifier (authorizes against data vault if necessary)
+   * Initializes Vaultifier (authorizes against data container if necessary)
    *
    * @returns {Promise<void>}
    */
@@ -164,14 +181,15 @@ export class Vaultifier {
 
   /**
    * This switches to the given repository name
-   * As the data vault also provides the functionality to have public keys per repo
+   * As the data container also provides the functionality to have public keys per repo
    * this function could be used to create a new instance of Vaultifier
    * But as this functionality is not yet active, it just changes the repo without doing anything further
    * 
    * @param repoId Repository that should be used in the returned instance of Vaultifier
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   async fromRepo(repoId: string): Promise<Vaultifier> {
-    this.repo = repoId;
+    this.options.repo = repoId;
     this.urls.setRepo(repoId);
 
     return this;
@@ -190,9 +208,9 @@ export class Vaultifier {
 
   /**
    * Enables or disables end-to-end encryption
-   * TODO: this should always be enabled by default
    * 
    * @param isActive
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   async setEnd2EndEncryption(isActive = true): Promise<VaultEncryptionSupport> {
     const e2eKeysKey = 'e2e-keys';
@@ -207,10 +225,10 @@ export class Vaultifier {
         this.publicKey = (await this.communicator.get(this.urls.publicKey(), true))
           .data.public_key;
 
-        if (this.privateKeyCredentials) {
-          const { nonce, masterKey } = this.privateKeyCredentials;
+        if (this.options.privateKeyCredentials) {
+          const { nonce, masterKey } = this.options.privateKeyCredentials;
 
-          const encryptedPassword = (await this.communicator.get(this.urls.getEncryptedPassword(this.privateKeyCredentials.nonce)))
+          const encryptedPassword = (await this.communicator.get(this.urls.getEncryptedPassword(this.options.privateKeyCredentials.nonce)))
             .data.cipher;
           const password = await decrypt({
             value: encryptedPassword,
@@ -274,7 +292,7 @@ export class Vaultifier {
   }
 
   /**
-   * A generic method to post data to the Data Vault
+   * A generic method to post data to the data container
    * 
    * @param url Url where to send the request to. Has to start with a leading slash "/"
    * @param usesAuth Whether or not the call should be authorized or not
@@ -287,7 +305,7 @@ export class Vaultifier {
   ): Promise<NetworkResponse> => this.communicator.post(this.urls.getGenericUrl(url), usesAuth, data);
 
   /**
-   * A generic method to put data to the Data Vault
+   * A generic method to put data to the data container
    * 
    * @param url Url where to send the request to. Has to start with a leading slash "/"
    * @param usesAuth Whether or not the call should be authorized or not
@@ -300,7 +318,7 @@ export class Vaultifier {
   ): Promise<NetworkResponse> => this.communicator.put(this.urls.getGenericUrl(url), usesAuth, data);
 
   /**
-   * A generic method to get data from the Data Vault
+   * A generic method to get data from the data container
    * 
    * @param url Url where to send the request to. Has to start with a leading slash "/"
    * @param usesAuth Whether or not the call should be authorized or not
@@ -311,7 +329,7 @@ export class Vaultifier {
   ): Promise<NetworkResponse> => this.communicator.get(this.urls.getGenericUrl(url), usesAuth);
 
   /**
-   * Posts a value into the data vault's repository, without any metadata
+   * Posts a value into the data container's repository, without any metadata
    *
    * @param {Object} value JSON data to post into the repository
    *
@@ -347,9 +365,9 @@ export class Vaultifier {
   }
 
   /**
-   * Contains all necessary transformations and checks for posting/putting data to the data vault
+   * Contains all necessary transformations and checks for posting/putting data to the data container
    * 
-   * @param item Data to be posted/put to the data vault
+   * @param item Data to be posted/put to the data container
    */
   private async getPutpostData(item: VaultPostItem): Promise<string> {
     const { data, id, meta } = item;
@@ -370,9 +388,9 @@ export class Vaultifier {
 
 
   /**
-   * Posts an item into the data vault's repository, including any metadata
+   * Posts an item into the data container's repository, including any metadata
    * 
-   * @param item data that is going to be passed to the data vault
+   * @param item data that is going to be passed to the data container
    *
    * @returns {Promise<VaultMinMeta>}
    */
@@ -383,9 +401,9 @@ export class Vaultifier {
   }
 
   /**
-   * Puts an item into the data vault's repository (update), including any metadata
+   * Puts an item into the data container's repository (update), including any metadata
    * 
-   * @param item data that is going to be passed to the data vault for updating the record
+   * @param item data that is going to be passed to the data container for updating the record
    */
   async updateItem(item: VaultPostItem): Promise<VaultMinMeta> {
     const res = await this.communicator.put(this.urls.putItem(item), true, await this.getPutpostData(item));
@@ -394,7 +412,7 @@ export class Vaultifier {
   }
 
   /**
-   * Retrieve data from the data vault's repository including its metadata
+   * Retrieve data from the data container's repository including its metadata
    *
    * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
    *
@@ -412,6 +430,7 @@ export class Vaultifier {
    * @param {VaultItemQuery} query Query parameters to specify the record that has to be queried
    * 
    * @returns {Promise<string[]>}
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   async getProvis(query: VaultItemQuery): Promise<string[]> {
     const { data } = await this.communicator.get(this.urls.getProvis(query), true);
@@ -420,7 +439,7 @@ export class Vaultifier {
   }
 
   /**
-   * Retrieve data from data vault including all metadata
+   * Retrieve data from data container including all metadata
    * 
    * @param query Query parameters to specify the record that has to be queried
    */
@@ -464,6 +483,8 @@ export class Vaultifier {
 
   /**
    * Gets all repositories for the current plugin credentials
+   * 
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   async getRepos(): Promise<VaultRepo[] | undefined> {
     if ((await this.getVaultSupport()).repos) {
@@ -476,7 +497,7 @@ export class Vaultifier {
   }
 
   /**
-   * Queries all OCA schemas that are available within the user's vault
+   * Queries all SOyA schemas that are available within the user's vault
    */
   async getSchemas(): Promise<VaultSchema[]> {
     const { data } = await this.communicator.get(this.urls.getSchemas(), true);
@@ -524,22 +545,26 @@ export class Vaultifier {
    * @param {string} code Install code, usually 6 digits
    *
    * @returns {Promise<VaultCredentials>}
+   * 
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   async resolveInstallCode(code: string): Promise<VaultCredentials> {
     const { data } = await this.communicator.get(this.urls.resolveInstallCode(code), false);
 
-    this.credentials = {
+    this.options.credentials = {
       appKey: data.key as string,
       appSecret: data.secret as string,
     };
 
-    return this.credentials;
+    return this.options.credentials;
   }
 
   /**
    * Creates an eidas token that can be used as a callback parameter for the eids response POST url
    * 
    * @param id Vault item's id
+   * 
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   async getEidasToken(id: number): Promise<string> {
     const { data } = await this.communicator.post(this.urls.eidasToken, true, {
@@ -554,8 +579,7 @@ export class Vaultifier {
     let token: string;
 
     try {
-      // const support = await this.getVaultSupport();
-      const credentials = this.credentials;
+      const credentials = this.options.credentials;
 
       let body: any;
       let tokenUrl: string | undefined = undefined;
@@ -598,26 +622,26 @@ export class Vaultifier {
       else {
 
         if (credentials?.appKey && credentials?.appSecret)
-          this.credentials = credentials;
+          this.options.credentials = credentials;
         else {
           const storedCredentials = Storage.getObject<VaultCredentials>(vaultCredentialsStorageKey);
 
           if (storedCredentials) {
-            this.credentials = storedCredentials;
+            this.options.credentials = storedCredentials;
           }
           else
             throw new Error('No valid credentials provided.');
         }
 
         body = {
-          client_id: this.credentials.appKey,
-          client_secret: this.credentials.appSecret,
+          client_id: this.options.credentials.appKey,
+          client_secret: this.options.credentials.appSecret,
           grant_type: OAuthType.CLIENT_CREDENTIALS,
         };
       }
 
-      if (this.credentials?.scope)
-        body.scope = this.credentials.scope;
+      if (this.options.credentials?.scope)
+        body.scope = this.options.credentials.scope;
 
       let response: NetworkResponse;
       if (tokenUrl)
@@ -629,8 +653,8 @@ export class Vaultifier {
 
       // we only save the credentials if they are appKey and appSecret
       // authorizationCode does not make sense to store
-      if (this.credentials?.appKey && this.credentials.appSecret) {
-        Storage.set(vaultCredentialsStorageKey, this.credentials);
+      if (this.options.credentials?.appKey && this.options.credentials.appSecret) {
+        Storage.set(vaultCredentialsStorageKey, this.options.credentials);
       }
     }
     catch {
@@ -648,6 +672,8 @@ export class Vaultifier {
    * @param path
    *
    * @returns {string}
+   * 
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   static getRepositoryPath = (...path: Array<string>): string =>
     path

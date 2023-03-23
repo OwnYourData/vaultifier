@@ -157,7 +157,7 @@ export class Communicator {
     // only try to refresh authentication, if recursion count is still 0
     // otherwise we'll end up in an infinite loop
     if (isAuthenticated && recursionCount === 0) {
-      // if data vault responds with a 401, our token is expired
+      // if data container responds with a 401, our token is expired
       // therefore we fetch a new one and give the call another try
       if (nro.response.status === 401 && this._usesAuthentication()) {
         this.token = await this.refreshToken();

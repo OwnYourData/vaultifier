@@ -9,7 +9,9 @@ import { VaultifierUrls } from "../urls";
 
 export interface VaultifierWebOptions {
   /**
-   * Repository, where to write to. This only applies to data vaults and is specified in your plugin's manifest
+   * Repository, where to write to. This only applies to data containers and is specified in your plugin's manifest
+   * 
+   * @deprecated currently not implemented, might be re-enabled in a future release
    */
   repo?: string,
   /**
@@ -21,7 +23,7 @@ export interface VaultifierWebOptions {
    */
   clientId?: string,
   /**
-   * Name of query parameter used to retrieve the data vault's base url
+   * Name of query parameter used to retrieve the data container's base url
    */
   baseUrlParamName: string,
   /**
@@ -93,14 +95,10 @@ export class VaultifierWeb {
    */
   static async create(options?: Partial<VaultifierWebOptions>): Promise<VaultifierWeb> {
     const getParam = VaultifierWeb._getParamAccessor();
-
-    let _options: VaultifierWebOptions = defaultOptions;
-
-    if (_options)
-      _options = {
-        ..._options,
-        ...options,
-      };
+    const _options: VaultifierWebOptions = {
+      ...defaultOptions,
+      ...options,
+    }
 
     const {
       baseUrlParamName,
@@ -219,8 +217,8 @@ export class VaultifierWeb {
       nonce,
     } : undefined;
 
-    vaultifier.credentials = credentials;
-    vaultifier.privateKeyCredentials = end2end;
+    vaultifier.options.credentials = credentials;
+    vaultifier.options.privateKeyCredentials = end2end;
 
     try {
       // try initializing vaultifier to see if credentials are working
