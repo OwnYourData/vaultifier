@@ -14,7 +14,7 @@ export class VaultifierUrls {
   readonly eidasToken: string;
 
   constructor(
-    public baseUrl: string = 'https://data-vault.eu',
+    public baseUrl: string,
     private repo?: string
   ) {
     // TODO: re-enable this security barrier

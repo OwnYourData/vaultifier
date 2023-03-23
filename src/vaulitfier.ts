@@ -106,12 +106,6 @@ export class Vaultifier {
           })
         }
       }
-      // if OAuth type is not specified by server, we assume the default, which is client_credentials
-      // but only if auth is set to true
-    } else if (data.auth) {
-      oAuth.push({
-        type: OAuthType.CLIENT_CREDENTIALS,
-      });
     }
 
     return this.supports = {

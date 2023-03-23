@@ -127,29 +127,17 @@ export class VaultifierWeb {
 
     let vaultifier: Vaultifier | undefined = new Vaultifier(
       baseUrl,
-      repo,
+      {
+        repo,
+      },
     );
 
     try {
       await vaultifier.getVaultSupport();
     }
-    catch {
-      // if baseUrl was specified, we try it with Vaultifier's default value
-      // therefore passing undefined
-      if (baseUrl) {
-        vaultifier = new Vaultifier(
-          undefined,
-          repo,
-        );
-
-        try {
-          await vaultifier.getVaultSupport();
-        }
-        catch (e) {
-          console.error(e);
-          vaultifier = undefined;
-        }
-      }
+    catch (e) {
+      console.error(e);
+      vaultifier = undefined;
     }
 
     return new VaultifierWeb(
